@@ -282,8 +282,20 @@ class ReadUpdate(BaseModel):
 class LeaderboardDBResponse(BaseModel):
     id: int
     submitter: str
-    replay_hash: str
+    replay_data_hash: str
+    replay_config_hash: str
     chart_id: str
     created_at: datetime
     chart_prefix: str
+
+    perfect: int
+    great: int
+    good: int
+    miss: int
+
+    arcade_score: int
+    accuracy_score: int
     # XXX: todo, grab perfects/greats/goods/misses, arcadeScore, accuracyScore
+
+class LevelSpeed(BaseModel):
+    level_speed: int | float
