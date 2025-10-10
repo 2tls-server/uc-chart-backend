@@ -278,24 +278,28 @@ class NotificationRequest(BaseModel):
 class ReadUpdate(BaseModel):
     is_read: bool
 
+class ReplayUploadData(BaseModel):
+    engine: str
+    nperfect: int
+    ngreat: int
+    ngood: int
+    nmiss: int
+    arcade_score: int
+    accuracy_score: int
+    speed: float
 
-class LeaderboardDBResponse(BaseModel):
-    id: int
+class Leaderboard(ReplayUploadData):
     submitter: str
     replay_data_hash: str
     replay_config_hash: str
     chart_id: str
+
+class LeaderboardDBResponse(Leaderboard):
+    id: int
     created_at: datetime
     chart_prefix: str
 
-    perfect: int
-    great: int
-    good: int
-    miss: int
+    owner: Optional[bool] = None
 
-    arcade_score: int
-    accuracy_score: int
-    # XXX: todo, grab perfects/greats/goods/misses, arcadeScore, accuracyScore
-
-class LevelSpeed(BaseModel):
-    level_speed: int | float
+class Prefix(BaseModel):
+    prefix: str
