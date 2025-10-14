@@ -107,9 +107,9 @@ async def upload_replay(
 async def get_scores(
     request: Request,
     id: str,
-    page: Optional[int] = Query(0, ge=0),
+    page: int = Query(0, ge=0),
     limit: Literal[3, 10] = 3,
-    sort_by: Literal['arcade', 'accuracy'] = 'arcade'
+    session: Session = get_session()
 ):
     if len(id) != 32 or not id.isalnum():
         raise HTTPException(
@@ -118,4 +118,46 @@ async def get_scores(
     
     app: ChartFastAPI = request.app
 
-    leaderboards.get_leaderboard_for_chart(id, limit, page) # ...
+    leaderboards_query, count_query = leaderboards.get_leaderboard_for_chart(id, limit, page, session.sonolus_id) 
+
+    async with app.db_acquire() as conn:
+        count = await conn.fetchrow(count_query)
+
+        if count.total_count == 0:
+            data = []
+            page_count = 0
+        elif page * 10 >= count.total_count:
+            data = []
+            page_count = (count.total_count + 9) // 10
+        else:
+            data = [row.model_dump() for row in await conn.fetch(leaderboards_query)]
+            page_count = (count.total_count + 9) // 10
+
+    return {
+        "pageCount": page_count,
+        "data": data
+    }
+
+@router.get("/{leaderboard_id}")
+async def get_score(
+    request: Request,
+    id: str,
+    leaderboard_id: int
+):
+    if len(id) != 32 or not id.isalnum():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chart ID."
+        )
+    
+    app: ChartFastAPI = request.app
+
+    async with app.db_acquire() as conn:
+        leaderboard = await conn.fetchrow(leaderboards.get_leaderboard_by_id(id, leaderboard_id))
+
+        if not leaderboard:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        
+    return {
+        "data": leaderboard.model_dump(),
+        "asset_base_url": app.s3_asset_base_url
+    }

@@ -28,16 +28,12 @@ def get_leaderboard_for_chart(
     chart_id: str,
     limit: int = 10,
     page: int = 0,
-    sort_desc: bool = True,
     sonolus_id: Optional[str] = None,
 ) -> Tuple[SelectQuery[LeaderboardDBResponse], SelectQuery[Count]]:
     """
     Returns (leaderboard_entries_query, count_query).
     Use count_query to calculate total pages.
     """
-    order_clause = (
-        "ORDER BY l.created_at DESC" if sort_desc else "ORDER BY l.created_at ASC"
-    )
     offset = page * limit
 
     leaderboard_query = SelectQuery(
@@ -47,6 +43,7 @@ def get_leaderboard_for_chart(
                 l.id,
                 l.submitter,
                 l.replay_data_hash,
+                l.replay_config_hash,
                 l.chart_id,
                 l.created_at,
                 CONCAT(c.chart_author, '/', c.id) AS chart_prefix,
@@ -62,7 +59,7 @@ def get_leaderboard_for_chart(
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1
-            {order_clause}
+            ORDER BY l.arcade_score DESC
             LIMIT $2 OFFSET $3;
         """,
         chart_id,
@@ -84,6 +81,36 @@ def get_leaderboard_for_chart(
     return (
         leaderboard_query,
         count_query,
+    )
+
+def get_leaderboard_by_id(
+    chart_id: str,
+    leaderboard_id: int
+) -> SelectQuery[LeaderboardDBResponse]:
+    return SelectQuery(
+        LeaderboardDBResponse,
+        """
+            SELECT 
+                l.id,
+                l.submitter,
+                l.replay_data_hash,
+                l.replay_config_hash,
+                l.chart_id,
+                l.created_at,
+                CONCAT(c.chart_author, '/', c.id) AS chart_prefix,
+                l.engine,
+                l.nperfect,
+                l.ngreat,
+                l.ngood,
+                l.nmiss,
+                l.arcade_score,
+                l.accuracy_score,
+                l.speed
+            FROM leaderboards l
+            JOIN charts c ON l.chart_id = c.id
+            WHERE l.chart_id = $1 AND l.id = $2
+        """,
+        chart_id, leaderboard_id
     )
 
 def get_leaderboard_prefix_for_user(sonolus_id: str) -> SelectQuery[Prefix]:
