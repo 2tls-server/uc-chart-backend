@@ -299,7 +299,5 @@ class LeaderboardDBResponse(Leaderboard):
     created_at: datetime
     chart_prefix: str
 
-    owner: Optional[bool] = None
-
 class Prefix(BaseModel):
     prefix: str

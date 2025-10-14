@@ -55,7 +55,6 @@ def get_leaderboard_for_chart(
                 l.arcade_score,
                 l.accuracy_score,
                 l.speed,
-                COALESCE(l.submitter = $4, FALSE) as owner
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1
@@ -144,7 +143,6 @@ def get_user_leaderboard_for_chart(chart_id: str, sonolus_id: str) -> SelectQuer
                 l.arcade_score,
                 l.accuracy_score,
                 l.speed,
-                COALESCE(l.submitter = $4, FALSE) as owner
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1 AND l.submitter = $2;

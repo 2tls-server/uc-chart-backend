@@ -5,6 +5,7 @@ from typing import Optional, Literal
 
 from helpers.models import ReplayUploadData, Leaderboard
 from helpers.session import Session, get_session
+from helpers.upload_token import verify as verify_upload_token
 from helpers.hashing import calculate_sha1
 from core import ChartFastAPI
 
@@ -24,16 +25,16 @@ async def upload_replay(
     replay_data_file: UploadFile,
     replay_config_file: UploadFile,
     data: ReplayUploadData,
-    session: Session = get_session(
-        enforce_auth=True, enforce_type="game", allow_banned_users=False
-    )
+    upload_token: str
 ):
+    app: ChartFastAPI = request.app
+    
+    user_id = verify_upload_token(upload_token, app)
+
     if len(id) != 32 or not id.isalnum():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chart ID."
         )
-
-    app: ChartFastAPI = request.app
 
     if request.headers.get(app.auth_header) != app.auth:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="the")
@@ -49,7 +50,7 @@ async def upload_replay(
 
     async with app.db_acquire() as conn:
         curr_leaderboard = await conn.fetchrow(leaderboards.get_user_leaderboard_for_chart(
-            id, session.sonolus_id
+            id, user_id
         ))
 
         if curr_leaderboard:
@@ -58,7 +59,7 @@ async def upload_replay(
             
         level = await conn.fetchrow(charts.get_chart_by_id(id))
 
-        if level.status == "PRIVATE" and level.chart_design != session.sonolus_id:
+        if level.status == "PRIVATE" and level.chart_design != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This chart is private."
@@ -77,7 +78,7 @@ async def upload_replay(
         for (contents, hash) in ((replay_data, replay_data_hash), (replay_config, replay_config_hash)):
             tasks.append(bucket.upload_fileobj(
                 Fileobj = BytesIO(contents),
-                Key=f"{level.chart_design}/{level.id}/replays/{session.sonolus_id}/{hash}",
+                Key=f"{level.chart_design}/{level.id}/replays/{user_id}/{hash}",
                 ExtraArgs={"ContentType": "application/gzip"}
             ))
 
@@ -86,7 +87,7 @@ async def upload_replay(
     async with app.db_acquire() as conn:
         await conn.execute(leaderboards.insert_leaderboard_entry(
             Leaderboard(
-                submitter=session.sonolus_id,
+                submitter=user_id,
                 replay_data_hash=replay_data_hash,
                 replay_config_hash=replay_config_hash,
                 chart_id=id,
