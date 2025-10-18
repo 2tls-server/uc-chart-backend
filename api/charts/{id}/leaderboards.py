@@ -22,14 +22,14 @@ router = APIRouter()
 async def upload_replay(
     id: str,
     request: Request,
-    replay_data_file: UploadFile,
-    replay_config_file: UploadFile,
+    # replay_data_file: UploadFile,
+    # replay_config_file: UploadFile,
     data: ReplayUploadData,
     upload_token: str
 ):
     app: ChartFastAPI = request.app
     
-    user_id = verify_upload_token(upload_token, app)
+    user_id, file_hashes = verify_upload_token(upload_token, app)
 
     if len(id) != 32 or not id.isalnum():
         raise HTTPException(
@@ -40,8 +40,8 @@ async def upload_replay(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="the")
     
     if (
-        replay_data_file.size > MAX_FILE_SIZES["data"]
-        or replay_config_file.size > MAX_FILE_SIZES["config"]
+        # replay_data_file.size > MAX_FILE_SIZES["data"]
+        # or replay_config_file.size > MAX_FILE_SIZES["config"]
     ):
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
@@ -65,6 +65,8 @@ async def upload_replay(
                 detail="This chart is private."
             )
             
+    return # TODO: use upload_token to determine file hashes and asdasdasd
+
     replay_data = await replay_data_file.read()
     replay_config = await replay_config_file.read()
 
