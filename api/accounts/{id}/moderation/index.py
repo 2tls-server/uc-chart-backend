@@ -20,6 +20,8 @@ async def ban_user(request: Request, id: str, delete: bool = False):
 
     async with app.db_acquire() as conn:
         await conn.execute(query)
+        if delete:
+            await conn.conn.execute("DELETE FROM charts WHERE author = $1", id)
 
     if delete:
         bucket_name = app.s3_bucket
