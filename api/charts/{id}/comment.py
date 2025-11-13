@@ -135,9 +135,9 @@ async def main(
     for comment in data:
         if comment["deleted_at"]:
             comment["content"] = (
-                "[DELETED]"
-                if (user and not user.mod)
-                else f"[DELETED]\nMod View:\n{'-'*10}\n{comment['content']}"
+                f"[DELETED]\nMod View:\n{'-'*10}\n{comment['content']}"
+                if (user and user.mod)
+                else "[DELETED]"
             )
     ret = {"data": data, "pageCount": page_count}
     if user and user.mod:
