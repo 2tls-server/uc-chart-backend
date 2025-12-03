@@ -1,52 +1,55 @@
-from fastapi import APIRouter, Request, HTTPException, status, UploadFile, Query
+import math
+from fastapi import APIRouter, File, Form, Request, HTTPException, status, UploadFile, Query
 import asyncio
+import gzip
 from io import BytesIO
 from typing import Optional, Literal
 
-from helpers.models import ReplayUploadData, Leaderboard
+from helpers.models import ReplayData, Leaderboard
 from helpers.session import Session, get_session
-from helpers.upload_token import verify as verify_upload_token
 from helpers.hashing import calculate_sha1
 from core import ChartFastAPI
 
 from database import leaderboards, charts
 
-MAX_FILE_SIZES = {
-    "data": 2 * 1024 * 1024, # 2 mb
-    "config": 200 # 200 bytes
-}
-
 router = APIRouter()
+
+def speed_multiplier(speed: float | None) -> float:
+    if speed is None:
+        return 1.0
+
+    tier = math.floor(speed * 10) / 10
+
+    if tier < 1:
+        return tier - 0.4
+    else:
+        return 1.0 + ((tier - 1.0) * 0.2)
 
 @router.post("/")
 async def upload_replay(
     id: str,
     request: Request,
-    # replay_data_file: UploadFile,
-    # replay_config_file: UploadFile,
-    data: ReplayUploadData,
-    upload_token: str
+    user_id: str = Form(...),
+    engine_name: str = Form(...),
+    speed: float | None = Form(None),
+    replay_data: UploadFile = File(...),
+    replay_config: UploadFile = File(...),
 ):
     app: ChartFastAPI = request.app
-    
-    user_id, file_hashes = verify_upload_token(upload_token, app)
+
+    if request.headers.get(app.auth_header) != app.auth:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="the")
 
     if len(id) != 32 or not id.isalnum():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chart ID."
         )
 
-    if request.headers.get(app.auth_header) != app.auth:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="the")
-    
-    if (
-        # replay_data_file.size > MAX_FILE_SIZES["data"]
-        # or replay_config_file.size > MAX_FILE_SIZES["config"]
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail="Uploaded files exceed file size limit.",
-        )
+    data = await replay_data.read()
+    config = await replay_config.read()
+
+    replay = ReplayData.model_validate_json(gzip.decompress(data))
+    replay.result.arcadeScore = int(replay.result.arcadeScore * speed_multiplier(speed))
 
     async with app.db_acquire() as conn:
         curr_leaderboard = await conn.fetchrow(leaderboards.get_user_leaderboard_for_chart(
@@ -54,7 +57,7 @@ async def upload_replay(
         ))
 
         if curr_leaderboard:
-            if curr_leaderboard.arcade_score >= data.arcade_score:
+            if curr_leaderboard.arcade_score >= replay.result.arcadeScore:
                 return {"status": "unchanged"}
             
         level = await conn.fetchrow(charts.get_chart_by_id(id))
@@ -64,14 +67,9 @@ async def upload_replay(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This chart is private."
             )
-            
-    return # TODO: use upload_token to determine file hashes and asdasdasd
 
-    replay_data = await replay_data_file.read()
-    replay_config = await replay_config_file.read()
-
-    replay_data_hash = calculate_sha1(replay_data)
-    replay_config_hash = calculate_sha1(replay_config)
+    replay_data_hash = calculate_sha1(data)
+    replay_config_hash = calculate_sha1(config)
 
     async with app.s3_session_getter() as s3:
         tasks = []
@@ -93,14 +91,14 @@ async def upload_replay(
                 replay_data_hash=replay_data_hash,
                 replay_config_hash=replay_config_hash,
                 chart_id=id,
-                engine=data.engine,
-                nperfect=data.nperfect,
-                ngreat=data.ngreat,
-                ngood=data.ngood,
-                nmiss=data.nmiss,
-                arcade_score=data.arcade_score,
-                accuracy_score=data.accuracy_score,
-                speed=data.speed
+                engine=engine_name,
+                nperfect=replay.result.perfect,
+                ngreat=replay.result.great,
+                ngood=replay.result.good,
+                nmiss=replay.result.miss,
+                arcade_score=replay.result.arcadeScore,
+                accuracy_score=replay.result.accuracyScore,
+                speed=speed
             )
         ))
 

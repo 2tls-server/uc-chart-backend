@@ -301,3 +301,48 @@ class LeaderboardDBResponse(Leaderboard):
 
 class Prefix(BaseModel):
     prefix: str
+
+class _ReplayData_playArea(BaseModel):
+    width: int | float
+    height: int | float
+
+class GameplayResult(BaseModel):
+    grade: Literal["allPerfect", "fullCombo", "pass", "fail"]
+    arcadeScore: int | float
+    accuracyScore: int | float
+    combo: int | float
+    perfect: int | float
+    great: int | float
+    good: int | float
+    miss: int | float
+    totalCount: int | float
+
+class _ReplayData_entities_data(BaseModel):
+    name: str
+    value: int | float
+
+class _ReplayData_entities(BaseModel):
+    data: list[_ReplayData_entities_data]
+
+class _ReplayData_touches(BaseModel):
+    l: list[int | float]
+    t: list[int | float]
+    x: list[int | float]
+    y: list[int | float]
+
+class _ReplayData_streams(BaseModel):
+    id: int | float
+    keys: list[int | float]
+    values: list[int | float]
+
+class ReplayData(BaseModel):
+    startTime: int | float
+    saveTime: int | float
+    duration: int | float
+    inputOffset: int | float
+    playArea: _ReplayData_playArea
+    result: GameplayResult
+    entities: list[_ReplayData_entities]
+    touches: _ReplayData_touches
+    streams: list[_ReplayData_streams] | None
+    

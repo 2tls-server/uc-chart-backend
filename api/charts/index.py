@@ -74,7 +74,8 @@ async def main(
         status = "PUBLIC"
         use_owned_by = True
     item_page_count = 10
-    if type == "random":
+    if type == "random": # TODO: separate into different endpoints,
+                         # frontend though...
         if use_owned_by:
             raise HTTPException(
                 status_code=fstatus.HTTP_400_BAD_REQUEST,
