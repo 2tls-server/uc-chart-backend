@@ -6,7 +6,7 @@ from helpers.models import LeaderboardDBResponse, Count, Leaderboard, Prefix
 def insert_leaderboard_entry(leaderboard: Leaderboard) -> ExecutableQuery:
     return ExecutableQuery(
         """
-        INSERT INTO leaderboards (submitter, replay_data_hash, replay_config_hash, chart_id, engine, nperfect, ngreat, ngood, nmiss, arcade_score, accuracy_score, speed)
+        INSERT INTO leaderboards (submitter, replay_data_hash, replay_config_hash, chart_id, engine, nperfect, ngreat, ngood, nmiss, arcade_score, accuracy_score, speed, display_name)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         """,
         leaderboard.submitter,
@@ -20,7 +20,8 @@ def insert_leaderboard_entry(leaderboard: Leaderboard) -> ExecutableQuery:
         leaderboard.nmiss,
         leaderboard.arcade_score,
         leaderboard.accuracy_score,
-        leaderboard.speed
+        leaderboard.speed,
+        leaderboard.display_name
     )
 
 
@@ -55,6 +56,7 @@ def get_leaderboard_for_chart(
                 l.arcade_score,
                 l.accuracy_score,
                 l.speed,
+                l.display_name
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1
@@ -104,7 +106,8 @@ def get_leaderboard_by_id(
                 l.nmiss,
                 l.arcade_score,
                 l.accuracy_score,
-                l.speed
+                l.speed,
+                l.display_name
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1 AND l.id = $2
@@ -143,6 +146,7 @@ def get_user_leaderboard_for_chart(chart_id: str, sonolus_id: str) -> SelectQuer
                 l.arcade_score,
                 l.accuracy_score,
                 l.speed,
+                l.display_name
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1 AND l.submitter = $2;

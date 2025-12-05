@@ -290,11 +290,13 @@ class ReplayUploadData(BaseModel):
 
 class Leaderboard(ReplayUploadData):
     submitter: str
+    display_name: str
     replay_data_hash: str
     replay_config_hash: str
     chart_id: str
 
 class LeaderboardDBResponse(Leaderboard):
+    display_name: str
     id: int
     created_at: datetime
     chart_prefix: str

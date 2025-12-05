@@ -47,7 +47,7 @@ async def main(
 ):
     app: ChartFastAPI = request.app
     try:
-        data: ChartUploadData = ChartUploadData.model_validate_json(data)
+        data: ChartUploadData = ChartUploadData.model_validate_json(data) # TODO: Json[ChartUploadData]
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e.errors())
 

@@ -30,6 +30,7 @@ async def upload_replay(
     id: str,
     request: Request,
     user_id: str = Form(...),
+    display_name: str = Form(...),
     engine_name: str = Form(...),
     speed: float | None = Form(None),
     replay_data: UploadFile = File(...),
@@ -98,7 +99,8 @@ async def upload_replay(
                 nmiss=replay.result.miss,
                 arcade_score=replay.result.arcadeScore,
                 accuracy_score=replay.result.accuracyScore,
-                speed=speed
+                speed=speed,
+                display_name=display_name
             )
         ))
 
