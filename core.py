@@ -111,6 +111,4 @@ class ChartFastAPI(FastAPI):
         else:
             if self.debug:
                 raise exc
-            return JSONResponse(
-                content={"message": exc.detail}, status_code=exc.status_code
-            )
+            return JSONResponse(content={}, status_code=exc.status_code)

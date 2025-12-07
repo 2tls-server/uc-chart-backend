@@ -209,9 +209,7 @@ async def main(
     try:
         chart_bytes = await app.run_blocking(convert)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     chart_hash = calculate_sha1(chart_bytes)
     s3_uploads.append(
         {

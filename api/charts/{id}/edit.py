@@ -138,7 +138,7 @@ async def main(
                 chart_bytes = await app.run_blocking(convert)
             except Exception as e:
                 raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
                 )
             chart_hash = calculate_sha1(chart_bytes)
             if not chart_hash == old_chart_data.chart_file_hash:
