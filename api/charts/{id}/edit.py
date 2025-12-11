@@ -66,7 +66,7 @@ async def main(
         or (data.rating < -999)
     ):
         raise HTTPException(
-            status=status.HTTP_400_BAD_REQUEST, detail="Length limits exceeded"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Length limits exceeded"
         )
     user = await session.user()
     query = charts.get_chart_by_id(id)
@@ -117,7 +117,7 @@ async def main(
                 elif leveldata:
                     if ld_type != "nextsekai":
                         raise HTTPException(
-                            status=status.HTTP_400_BAD_REQUEST,
+                            status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"Incorrect LevelData: {ld_type}",
                         )
                     if not compressed:
@@ -134,7 +134,12 @@ async def main(
                     return chart_bytes
                 return converted.read()
 
-            chart_bytes = await app.run_blocking(convert)
+            try:
+                chart_bytes = await app.run_blocking(convert)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+                )
             chart_hash = calculate_sha1(chart_bytes)
             if not chart_hash == old_chart_data.chart_file_hash:
                 s3_uploads.append(
