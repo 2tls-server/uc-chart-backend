@@ -22,7 +22,7 @@ async def mod_user(request: Request, id: str):
     return {"result": "success"}
 
 
-@router.patch("/")
+@router.patch("/unmod/")
 async def unmod_user(request: Request, id: str):
     app: ChartFastAPI = request.app
 
