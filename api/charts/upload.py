@@ -100,7 +100,7 @@ async def main(
             return JSONResponse(content={}, status_code=403)
 
     cooldown = user.chart_upload_cooldown
-    if cooldown:
+    if cooldown and not app.debug:
         now = datetime.now(timezone.utc)
         if now < cooldown:
             remaining = cooldown - now
@@ -289,7 +289,8 @@ async def main(
             description=data.description,
             preview_file_hash=preview_hash if preview_file else None,
             background_file_hash=background_hash if background_image else None,
-        )
+        ),
+        upload_public=app.debug
     )
     query2 = accounts.update_cooldown(
         sonolus_id=session.sonolus_id,
