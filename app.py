@@ -2,7 +2,7 @@ import os, importlib, traceback
 from urllib.parse import urlparse
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Request, status, HTTPException
+from fastapi import Request, status, Response
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 import uvicorn
@@ -32,9 +32,9 @@ async def no_unhandled_exceptions(request: Request, call_next):
         return await call_next(request)
     except Exception:
         traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unhandled error. Report to discord.gg/UntitledCharts",
+        return Response(
+            content="Unhandled error. Report to discord.gg/UntitledCharts", 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 
