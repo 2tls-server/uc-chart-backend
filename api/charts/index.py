@@ -92,7 +92,7 @@ async def main(
     if type == "quick":
         if sort_by == "abc":
             sort_order = "asc" if sort_order == "desc" else "desc"
-        count_query, quick_list_query = charts.get_chart_list(
+        count_query, list_query = charts.get_chart_list(
             page=page,
             items_per_page=item_page_count,
             meta_includes=meta_includes,
@@ -104,7 +104,7 @@ async def main(
     else:
         if sort_by == "abc":
             sort_order = "asc" if sort_order == "desc" else "desc"
-        count_query, chart_list_query = charts.get_chart_list(
+        count_query, list_query = charts.get_chart_list(
             page=page,
             items_per_page=item_page_count,
             staff_pick=staff_pick,
@@ -139,9 +139,7 @@ async def main(
             data = []
             page_count = (count["total_count"] + item_page_count - 1) // item_page_count
         else:
-            rows = await conn.fetch(
-                quick_list_query if type == "quick" else chart_list_query
-            )
+            rows = await conn.fetch(list_query)
             data = [row.model_dump() for row in rows]
             page_count = (count["total_count"] + item_page_count - 1) // item_page_count
 
