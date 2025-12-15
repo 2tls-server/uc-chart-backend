@@ -24,7 +24,7 @@ async def main(request: Request, data: ExternalServiceUserProfileWithType):
     """
     app: ChartFastAPI = request.app
 
-    if request.headers.get(app.auth_header) != app.auth:
+    if request.headers.get(app.auth_header) != app.auth and not app.debug:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="why?")
 
     id_data = app.decode_key(data.id_key)
