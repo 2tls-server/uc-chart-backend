@@ -21,7 +21,7 @@ def create_chart(chart: Chart) -> SelectQuery[DBID]:
         """
             INSERT INTO charts (id, author, rating, description, chart_author, title, artists, tags, jacket_file_hash, music_file_hash, chart_file_hash, preview_file_hash, background_file_hash, background_v1_file_hash, background_v3_file_hash, status, created_at, updated_at)
             VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, 'PRIVATE', CURRENT_TIMESTAMP
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'PRIVATE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
             RETURNING id;
         """,
