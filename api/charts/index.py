@@ -141,7 +141,7 @@ async def main(
             rows = await conn.fetch(
                 quick_list_query if type == "quick" else chart_list_query
             )
-            data = [row.model_dump() for row in rows] if rows else []
+            data = [row.model_dump() for row in rows]
             page_count = (count["total_count"] + item_page_count - 1) // item_page_count
 
     return {
