@@ -111,7 +111,7 @@ async def get_scores(
     request: Request,
     id: str,
     page: int = Query(0, ge=0),
-    limit: Literal[3, 10] = 3,
+    limit: Literal["3", "10"] = "3",
     session: Session = get_session()
 ):
     if len(id) != 32 or not id.isalnum():
@@ -121,6 +121,7 @@ async def get_scores(
     
     app: ChartFastAPI = request.app
 
+    limit = int(limit)
     leaderboards_query, count_query = leaderboards.get_leaderboard_for_chart(id, limit, page, session.sonolus_id) 
 
     async with app.db_acquire() as conn:
