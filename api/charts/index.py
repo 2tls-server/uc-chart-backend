@@ -131,6 +131,7 @@ async def main(
 
     async with app.db_acquire() as conn:
         count = (await conn.fetchrow(count_query)).model_dump()
+        print(count["total_count"])
         if count["total_count"] == 0:
             data = []
             page_count = 0
