@@ -22,6 +22,8 @@ class DBConnWrapper:
     async def fetch(self, query: SelectQuery[T]) -> Optional[list[T]]:
         fetch_result = await self.conn.fetch(query.sql, *query.args)
 
+        print(fetch_result)
+
         if not fetch_result:
             return None
 
