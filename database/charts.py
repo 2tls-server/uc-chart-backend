@@ -243,8 +243,6 @@ def get_chart_list(
 
     data_params = tuple(params) + (items_per_page, page * items_per_page)
 
-    print(count_query, '\n\n\n\n\nslashn\n', query)
-
     return (
         SelectQuery(Count, count_query, *count_params),
         SelectQuery(
