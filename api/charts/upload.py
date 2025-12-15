@@ -190,7 +190,7 @@ async def main(
             )
             sonolus_converters.next_sekai.export(converted, score)
         elif leveldata:
-            if ld_type != "nextsekai":
+            if ld_type != "nextsekai" and not app.debug:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Incorrect LevelData: {ld_type} (expected: NextSekai)",
