@@ -66,7 +66,7 @@ def get_leaderboard_for_chart(
         chart_id,
         limit,
         offset,
-        sonolus_id
+        # sonolus_id TODO: maybe some indication like [you]?
     )
 
     count_query = SelectQuery(
