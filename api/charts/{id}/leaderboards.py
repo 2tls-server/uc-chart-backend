@@ -2,8 +2,7 @@ import math
 from fastapi import APIRouter, File, Form, Request, HTTPException, status, UploadFile, Query
 import asyncio
 import gzip
-from io import BytesIO
-from typing import Optional, Literal
+from typing import Literal
 
 from helpers.models import ReplayData, Leaderboard
 from helpers.session import Session, get_session
@@ -78,7 +77,7 @@ async def upload_replay(
 
         for (contents, hash) in ((replay_data, replay_data_hash), (replay_config, replay_config_hash)):
             tasks.append(bucket.upload_fileobj(
-                Fileobj = BytesIO(contents),
+                Fileobj = contents,
                 Key=f"{level.chart_design}/{level.id}/replays/{user_id}/{hash}",
                 ExtraArgs={"ContentType": "application/gzip"}
             ))
