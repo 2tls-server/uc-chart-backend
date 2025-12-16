@@ -152,6 +152,7 @@ EXECUTE FUNCTION update_comment_count();""",
     arcade_score INTEGER NOT NULL,
     accuracy_score INTEGER NOT NULL,
     display_name TEXT NOT NULL,
+    speed DECIMAL,
     created_at timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 );""",
         """CREATE OR REPLACE FUNCTION update_like_count()
