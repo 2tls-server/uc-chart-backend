@@ -166,7 +166,7 @@ def delete_leaderboard_entry(entry_id: int) -> ExecutableQuery:
     )
 
 
-def delete_leaderboard_for_chart(chart_id: str) -> ExecutableQuery:
+def delete_leaderboard_for_chart(chart_id: str) -> ExecutableQuery: # TODO: use when deleting a chart
     return ExecutableQuery(
         """
         DELETE FROM leaderboards

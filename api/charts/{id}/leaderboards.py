@@ -51,6 +51,7 @@ async def upload_replay(
     replay = ReplayData.model_validate_json(gzip.decompress(data))
     replay.result.arcadeScore = int(replay.result.arcadeScore * speed_multiplier(speed))
 
+    tasks = []
     async with app.db_acquire() as conn:
         curr_leaderboard = await conn.fetchrow(leaderboards.get_user_leaderboard_for_chart(
             id, user_id
@@ -59,6 +60,8 @@ async def upload_replay(
         if curr_leaderboard:
             if curr_leaderboard.arcade_score >= replay.result.arcadeScore:
                 return {"status": "unchanged"}
+            
+            await conn.execute(leaderboards.delete_leaderboard_entry(curr_leaderboard.id))
             
         level = await conn.fetchrow(charts.get_chart_by_id(id))
 
@@ -72,7 +75,6 @@ async def upload_replay(
     replay_config_hash = calculate_sha1(config)
 
     async with app.s3_session_getter() as s3:
-        tasks = []
         bucket = await s3.Bucket(app.s3_bucket)
 
         for (contents, hash) in ((replay_data, replay_data_hash), (replay_config, replay_config_hash)):
@@ -81,6 +83,14 @@ async def upload_replay(
                 Key=f"{level.chart_design}/{level.id}/replays/{user_id}/{hash}",
                 ExtraArgs={"ContentType": "application/gzip"}
             ))
+
+        if curr_leaderboard:
+            batch = [
+                {"Key": f"{level.chart_design}/{level.id}/replays/{user_id}/{curr_leaderboard.replay_data_hash}"},
+                {"Key": f"{level.chart_design}/{level.id}/replays/{user_id}/{curr_leaderboard.replay_config_hash}"}
+            ]
+
+            tasks.append(bucket.delete_objects(Delete={"Objects": batch}))
 
         await asyncio.gather(*tasks)
 
