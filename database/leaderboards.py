@@ -7,7 +7,7 @@ def insert_leaderboard_entry(leaderboard: Leaderboard) -> ExecutableQuery:
     return ExecutableQuery(
         """
         INSERT INTO leaderboards (submitter, replay_data_hash, replay_config_hash, chart_id, engine, nperfect, ngreat, ngood, nmiss, arcade_score, accuracy_score, speed, display_name)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         """,
         leaderboard.submitter,
         leaderboard.replay_data_hash,
