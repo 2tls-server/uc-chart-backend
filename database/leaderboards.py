@@ -135,6 +135,7 @@ def get_user_leaderboard_for_chart(chart_id: str, sonolus_id: str) -> SelectQuer
                 l.id,
                 l.submitter,
                 l.replay_data_hash,
+                l.replay_config_hash,
                 l.chart_id,
                 l.created_at,
                 CONCAT(c.chart_author, '/', c.id) AS chart_prefix,
