@@ -12,6 +12,7 @@ from helpers.hashing import calculate_sha1
 from helpers.file_checks import get_and_check_file
 from helpers.backgrounds import generate_backgrounds_resize_jacket
 from helpers.session import get_session, Session
+from helpers.constants import MAX_FILE_SIZES, MAX_TEXT_SIZES
 
 import sonolus_converters
 
@@ -22,15 +23,6 @@ from pydantic import ValidationError
 from core import ChartFastAPI
 
 router = APIRouter()
-
-MAX_FILE_SIZES = {
-    "jacket": int(7.5 * 1024 * 1024),  # 7.5 MB
-    "chart": 20 * 1024 * 1024,  # 20 MB
-    "audio": 50 * 1024 * 1024,  # 50 MB
-    "preview": 5 * 1024 * 1024,  # 5 MB
-    "background": 15 * 1024 * 1024,  # 15 MB
-}
-
 
 @router.post("/")
 async def main(
@@ -52,12 +44,12 @@ async def main(
         raise HTTPException(status_code=422, detail=e.errors())
 
     if (
-        (data.description and len(data.description) > 1000)
-        or (len(data.artists) > 50)
-        or (len(data.title) > 50)
-        or (len(data.author) > 50)
-        or (data.tags and any(len(tag) > 10 for tag in data.tags))
-        or (data.tags and len(data.tags) > 3)
+        (data.description and len(data.description) > MAX_TEXT_SIZES["description"])
+        or (data.artists and len(data.artists) > MAX_TEXT_SIZES["artists"])
+        or (data.title and len(data.title) > MAX_TEXT_SIZES["title"])
+        or (data.author and len(data.author) > MAX_TEXT_SIZES["author"])
+        or (data.tags and any(len(tag) > MAX_TEXT_SIZES["per_tag"] for tag in data.tags))
+        or (data.tags and len(data.tags) > MAX_TEXT_SIZES["tags_count"])
         or (data.rating > 999)
         or (data.rating < -999)
     ):
