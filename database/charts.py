@@ -647,7 +647,7 @@ def fetch_chart_like_trend(chart_id: str) -> SelectQuery[ChartLikeTrend]:
         WITH days AS (
             SELECT
                 generate_series(
-                    (CURRENT_DATE - INTERVAL '6 days'),
+                    CURRENT_DATE - INTERVAL '6 days',
                     CURRENT_DATE,
                     INTERVAL '1 day'
                 )::date AS day
@@ -656,13 +656,12 @@ def fetch_chart_like_trend(chart_id: str) -> SelectQuery[ChartLikeTrend]:
             d.day,
             COUNT(cl.chart_id) AS total_likes
         FROM days d
+        LEFT JOIN charts ch
+            ON ch.id = $1
+            AND ch.status <> 'PRIVATE'
         LEFT JOIN chart_likes cl
-            ON cl.chart_id = $1
+            ON cl.chart_id = ch.id
             AND cl.created_at::date <= d.day
-        LEFT JOIN charts c
-            ON c.id = cl.chart_id
-            AND c.status <> 'PRIVATE'
-        WHERE c.id IS NOT NULL  -- ensures the chart is not PRIVATE
         GROUP BY d.day
         ORDER BY d.day ASC;
         """,
