@@ -24,6 +24,7 @@ from core import ChartFastAPI
 
 router = APIRouter()
 
+
 @router.post("/")
 async def main(
     request: Request,
@@ -48,7 +49,9 @@ async def main(
         or (data.artists and len(data.artists) > MAX_TEXT_SIZES["artists"])
         or (data.title and len(data.title) > MAX_TEXT_SIZES["title"])
         or (data.author and len(data.author) > MAX_TEXT_SIZES["author"])
-        or (data.tags and any(len(tag) > MAX_TEXT_SIZES["per_tag"] for tag in data.tags))
+        or (
+            data.tags and any(len(tag) > MAX_TEXT_SIZES["per_tag"] for tag in data.tags)
+        )
         or (data.tags and len(data.tags) > MAX_TEXT_SIZES["tags_count"])
         or (data.rating > 999)
         or (data.rating < -999)

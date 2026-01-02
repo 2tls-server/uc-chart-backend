@@ -6,6 +6,7 @@ from helpers.constants import MAX_FILE_SIZES, MAX_TEXT_SIZES
 
 router = APIRouter()
 
+
 @router.get("/")
 async def main(request: Request, id: str, session: Session = get_session()):
     # exposed to public

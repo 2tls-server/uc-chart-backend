@@ -12,5 +12,5 @@ MAX_TEXT_SIZES = {
     "author": 50,
     "title": 50,
     "per_tag": 10,
-    "tags_count": 3
+    "tags_count": 3,
 }
