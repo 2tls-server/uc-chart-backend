@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get("/")
-async def main(request: Request, id: str, session: Session = get_session()):
+async def main(request: Request, session: Session = get_session()):
     # exposed to public
     # no authentication needed
 
