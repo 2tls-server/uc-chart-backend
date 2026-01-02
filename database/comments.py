@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 
 from database.query import SelectQuery
-from helpers.models import Comment, CommentID, Count
+from helpers.models import Comment, CommentID, Count, ChartCommentTrend
 
 
 def create_comment(
@@ -133,4 +133,33 @@ def get_comments_by_account(
         sonolus_id,
         limit,
         offset,
+    )
+
+
+def fetch_chart_comment_trend(chart_id: str) -> SelectQuery[ChartCommentTrend]:
+    return SelectQuery(
+        ChartCommentTrend,
+        """
+        WITH days AS (
+            SELECT
+                generate_series(
+                    (CURRENT_DATE - INTERVAL '6 days'),
+                    CURRENT_DATE,
+                    INTERVAL '1 day'
+                )::date AS day
+        )
+        SELECT
+            d.day,
+            COUNT(c.id) AS total_comments
+        FROM days d
+        LEFT JOIN comments c
+            ON c.chart_id = $1
+            AND c.created_at::date <= d.day
+        LEFT JOIN charts ch
+            ON ch.id = c.chart_id
+            AND ch.status <> 'PRIVATE'
+        GROUP BY d.day
+        ORDER BY d.day ASC;
+        """,
+        chart_id,
     )

@@ -10,6 +10,7 @@ from helpers.models import (
     DBID,
     ChartByIDLiked,
     ChartDBResponseLiked,
+    ChartLikeTrend,
 )
 
 
@@ -636,3 +637,34 @@ def update_status(
             status,
             chart_id,
         )
+
+
+# trend
+def fetch_chart_like_trend(chart_id: str) -> SelectQuery[ChartLikeTrend]:
+    return SelectQuery(
+        ChartLikeTrend,
+        """
+        WITH days AS (
+            SELECT
+                generate_series(
+                    (CURRENT_DATE - INTERVAL '6 days'),
+                    CURRENT_DATE,
+                    INTERVAL '1 day'
+                )::date AS day
+        )
+        SELECT
+            d.day,
+            COUNT(cl.chart_id) AS total_likes
+        FROM days d
+        LEFT JOIN chart_likes cl
+            ON cl.chart_id = $1
+            AND cl.created_at::date <= d.day
+        LEFT JOIN charts c
+            ON c.id = cl.chart_id
+            AND c.status <> 'PRIVATE'
+        WHERE c.id IS NOT NULL  -- ensures the chart is not PRIVATE
+        GROUP BY d.day
+        ORDER BY d.day ASC;
+        """,
+        chart_id,
+    )
