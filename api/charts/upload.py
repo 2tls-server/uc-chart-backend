@@ -12,7 +12,7 @@ from helpers.hashing import calculate_sha1
 from helpers.file_checks import get_and_check_file
 from helpers.backgrounds import generate_backgrounds_resize_jacket
 from helpers.session import get_session, Session
-from helpers.constants import MAX_FILE_SIZES, MAX_TEXT_SIZES
+from helpers.constants import MAX_FILE_SIZES, MAX_TEXT_SIZES, MAX_RATINGS
 
 import sonolus_converters
 
@@ -53,8 +53,8 @@ async def main(
             data.tags and any(len(tag) > MAX_TEXT_SIZES["per_tag"] for tag in data.tags)
         )
         or (data.tags and len(data.tags) > MAX_TEXT_SIZES["tags_count"])
-        or (data.rating > 999)
-        or (data.rating < -999)
+        or (data.rating > MAX_RATINGS["max"])
+        or (data.rating < MAX_RATINGS["min"])
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Length limits exceeded"

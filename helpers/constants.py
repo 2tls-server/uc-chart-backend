@@ -14,3 +14,5 @@ MAX_TEXT_SIZES = {
     "per_tag": 10,
     "tags_count": 3,
 }
+
+MAX_RATINGS = {"min": -999, "max": 999, "decimal_places": 4}
