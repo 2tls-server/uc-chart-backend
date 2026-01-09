@@ -1,6 +1,9 @@
 # Private files
 config.yml
 
+# vscode
+.vscode/
+
 # script asset files, make em urselves
 scripts/assets/
 

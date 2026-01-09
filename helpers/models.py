@@ -1,9 +1,23 @@
 import json
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Literal, Optional
-from datetime import datetime
+from datetime import datetime, date
 from typing import Any, Union
 from decimal import Decimal, ROUND_HALF_UP
+
+
+# trend models
+class ChartLikeTrend(BaseModel):
+    day: date
+    total_likes: int
+
+
+class ChartCommentTrend(BaseModel):
+    day: date
+    total_comments: int
+
+
+# models
 
 
 class ServiceUserProfile(BaseModel):
