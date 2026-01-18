@@ -57,8 +57,8 @@ async def main(
             data.tags and any(len(tag) > MAX_TEXT_SIZES["per_tag"] for tag in data.tags)
         )
         or (data.tags and len(data.tags) > MAX_TEXT_SIZES["tags_count"])
-        or (data.rating > MAX_RATINGS["max"])
-        or (data.rating < MAX_RATINGS["min"])
+        or (data.rating and data.rating > MAX_RATINGS["max"])
+        or (data.rating and data.rating < MAX_RATINGS["min"])
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Length limits exceeded"
