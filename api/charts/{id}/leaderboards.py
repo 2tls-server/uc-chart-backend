@@ -102,6 +102,7 @@ async def upload_replay(
                 replay_config_hash=replay_config_hash,
                 chart_id=id,
                 engine=engine_name,
+                grade=replay.result.grade,
                 nperfect=replay.result.perfect,
                 ngreat=replay.result.great,
                 ngood=replay.result.good,
@@ -155,7 +156,8 @@ async def get_scores(
 async def get_score(
     request: Request,
     id: str,
-    leaderboard_id: int
+    leaderboard_id: int,
+    session: Session = get_session()
 ):
     if len(id) != 32 or not id.isalnum():
         raise HTTPException(
@@ -165,12 +167,57 @@ async def get_score(
     app: ChartFastAPI = request.app
 
     async with app.db_acquire() as conn:
-        leaderboard = await conn.fetchrow(leaderboards.get_leaderboard_by_id(id, leaderboard_id))
+        leaderboard = await conn.fetchrow(leaderboards.get_leaderboard_by_id(id, leaderboard_id, session.sonolus_id))
 
         if not leaderboard:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         
+    data = leaderboard.model_dump()
+
+    user = await session.user()
+    data["mod"] = user.mod or user.admin
+
     return {
-        "data": leaderboard.model_dump(),
+        "data": data,
         "asset_base_url": app.s3_asset_base_url
     }
+
+@router.delete("/{leaderboard_id}")
+async def delete_score(
+    request: Request,
+    id: str,
+    leaderboard_id: int,
+    session: Session = get_session(
+        enforce_auth=True
+    )
+):
+    if len(id) != 32 or not id.isalnum():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chart ID."
+        )
+    
+    app: ChartFastAPI = request.app
+
+    async with app.db_acquire() as conn:
+        leaderboard = await conn.fetchrow(leaderboards.get_leaderboard_by_id(id, leaderboard_id, session.sonolus_id))
+
+        if not leaderboard:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        
+        user = await session.user()
+        if not (leaderboard.owner or user.mod or user.admin):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+        
+        await conn.execute(leaderboards.delete_leaderboard_entry(leaderboard_id))
+
+        data = leaderboard.model_dump()
+
+        user = await session.user()
+        mod = user.mod or user.admin
+        data["mod"] = mod
+
+        if mod:
+            level = await conn.fetchrow(charts.get_chart_by_id(leaderboard.chart_id))
+            data["chart_title"] = level.title # TODO: optimize
+
+    return data

@@ -6,7 +6,7 @@ from helpers.models import LeaderboardDBResponse, Count, Leaderboard, Prefix
 def insert_leaderboard_entry(leaderboard: Leaderboard) -> ExecutableQuery:
     return ExecutableQuery(
         """
-        INSERT INTO leaderboards (submitter, replay_data_hash, replay_config_hash, chart_id, engine, nperfect, ngreat, ngood, nmiss, arcade_score, accuracy_score, speed, display_name)
+        INSERT INTO leaderboards (submitter, replay_data_hash, replay_config_hash, chart_id, engine, grade, nperfect, ngreat, ngood, nmiss, arcade_score, accuracy_score, speed, display_name)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         """,
         leaderboard.submitter,
@@ -14,6 +14,7 @@ def insert_leaderboard_entry(leaderboard: Leaderboard) -> ExecutableQuery:
         leaderboard.replay_config_hash,
         leaderboard.chart_id,
         leaderboard.engine,
+        leaderboard.grade,
         leaderboard.nperfect,
         leaderboard.ngreat,
         leaderboard.ngood,
@@ -49,6 +50,7 @@ def get_leaderboard_for_chart(
                 l.created_at,
                 CONCAT(c.chart_author, '/', c.id) AS chart_prefix,
                 l.engine,
+                l.grade,
                 l.nperfect,
                 l.ngreat,
                 l.ngood,
@@ -56,7 +58,8 @@ def get_leaderboard_for_chart(
                 l.arcade_score,
                 l.accuracy_score,
                 l.speed,
-                l.display_name
+                l.display_name,
+                COALESCE(c.submitter = $4, FALSE) AS owner
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1
@@ -66,7 +69,7 @@ def get_leaderboard_for_chart(
         chart_id,
         limit,
         offset,
-        # sonolus_id TODO: maybe some indication like [you]?
+        sonolus_id
     )
 
     count_query = SelectQuery(
@@ -84,9 +87,10 @@ def get_leaderboard_for_chart(
         count_query,
     )
 
-def get_leaderboard_by_id(
+def get_leaderboard_by_id( # TODO: pass sonolus id
     chart_id: str,
-    leaderboard_id: int
+    leaderboard_id: int,
+    sonolus_id: str | None = None
 ) -> SelectQuery[LeaderboardDBResponse]:
     return SelectQuery(
         LeaderboardDBResponse,
@@ -100,6 +104,7 @@ def get_leaderboard_by_id(
                 l.created_at,
                 CONCAT(c.chart_author, '/', c.id) AS chart_prefix,
                 l.engine,
+                l.grade,
                 l.nperfect,
                 l.ngreat,
                 l.ngood,
@@ -107,12 +112,13 @@ def get_leaderboard_by_id(
                 l.arcade_score,
                 l.accuracy_score,
                 l.speed,
-                l.display_name
+                l.display_name,
+                COALESCE(c.submitter = $4, FALSE) AS owner,
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1 AND l.id = $2
         """,
-        chart_id, leaderboard_id
+        chart_id, leaderboard_id, sonolus_id
     )
 
 def get_leaderboard_prefix_for_user(sonolus_id: str) -> SelectQuery[Prefix]:
@@ -140,6 +146,7 @@ def get_user_leaderboard_for_chart(chart_id: str, sonolus_id: str) -> SelectQuer
                 l.created_at,
                 CONCAT(c.chart_author, '/', c.id) AS chart_prefix,
                 l.engine,
+                l.grade,
                 l.nperfect,
                 l.ngreat,
                 l.ngood,

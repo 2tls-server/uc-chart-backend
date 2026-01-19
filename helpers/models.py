@@ -294,6 +294,7 @@ class ReadUpdate(BaseModel):
 
 class ReplayUploadData(BaseModel):
     engine: str
+    grade: Literal["allPerfect", "fullCombo", "pass", "fail"]
     nperfect: int
     ngreat: int
     ngood: int
@@ -314,6 +315,7 @@ class LeaderboardDBResponse(Leaderboard):
     id: int
     created_at: datetime
     chart_prefix: str
+    owner: bool | None = None
 
 class Prefix(BaseModel):
     prefix: str
