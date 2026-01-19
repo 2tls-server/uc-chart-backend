@@ -7,7 +7,7 @@ async def get_and_check_file(file, expected_type: Literal["image/png", "audio/mp
     if expected_type == "image/png":
         file_bytes = await file.read(10)
         # PNG magic number (89 50 4E 47 0D 0A 1A 0A)
-        if file_bytes[:8] != b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A":
+        if file_bytes[:8] != b"\x89\x50\x4e\x47\x0d\x0a\x1a\x0a":
             raise HTTPException(
                 status_code=400,
                 detail="Invalid file format. Please upload a valid PNG image.",
@@ -18,13 +18,13 @@ async def get_and_check_file(file, expected_type: Literal["image/png", "audio/mp
         if file_bytes[:8] == b"\x89PNG\r\n\x1a\n":
             result = True
         # JPEG/JFIF
-        elif file_bytes[:3] == b"\xFF\xD8\xFF":
+        elif file_bytes[:3] == b"\xff\xd8\xff":
             result = True
         # JPEG 2000 (JP2 signature box)
-        elif file_bytes[:8] == b"\x00\x00\x00\x0C\x6A\x50\x20\x20":
+        elif file_bytes[:8] == b"\x00\x00\x00\x0c\x6a\x50\x20\x20":
             result = True
         # JPEG 2000 codestream
-        elif file_bytes[:2] == b"\xFF\x4F":
+        elif file_bytes[:2] == b"\xff\x4f":
             result = True
         # AVIF
         elif file_bytes[4:12] == b"ftypavif" or file_bytes[4:12] == b"ftypavis":
