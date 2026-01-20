@@ -18,7 +18,7 @@ import sonolus_converters
 
 from typing import Optional
 
-from pydantic import ValidationError
+from pydantic import Json, ValidationError
 
 from core import ChartFastAPI
 
@@ -31,7 +31,7 @@ async def main(
     jacket_image: UploadFile,
     chart_file: UploadFile,
     audio_file: UploadFile,
-    data: str = Form(...),
+    data: Json[ChartUploadData] = Form(...),
     preview_file: Optional[UploadFile] = None,
     background_image: Optional[UploadFile] = None,
     session: Session = get_session(
@@ -40,7 +40,7 @@ async def main(
 ):
     app: ChartFastAPI = request.app
     try:
-        data: ChartUploadData = ChartUploadData.model_validate_json(data) # TODO: Json[ChartUploadData]
+        data: ChartUploadData = ChartUploadData.model_validate_json(data)
     except ValidationError as e:
         raise HTTPException(status_code=422, detail=e.errors())
 

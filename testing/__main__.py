@@ -9,7 +9,7 @@ USE_FAKE_EXTERNAL_AUTH = not input(
 )
 
 # TODO: support for multiple functions for the same path
-
+# TODO: update...
 
 @test.route("/accounts/session/external/id/", "POST")
 def external_auth_step1():

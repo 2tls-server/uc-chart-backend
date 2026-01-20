@@ -87,7 +87,7 @@ def get_leaderboard_for_chart(
         count_query,
     )
 
-def get_leaderboard_by_id( # TODO: pass sonolus id
+def get_leaderboard_by_id(
     chart_id: str,
     leaderboard_id: int,
     sonolus_id: str | None = None

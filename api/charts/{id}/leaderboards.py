@@ -63,9 +63,9 @@ async def upload_replay(
             
             await conn.execute(leaderboards.delete_leaderboard_entry(curr_leaderboard.id))
             
-        level = await conn.fetchrow(charts.get_chart_by_id(id))
+        chart = await conn.fetchrow(charts.get_chart_by_id(id))
 
-        if level.status == "PRIVATE" and level.chart_design != user_id:
+        if chart.status == "PRIVATE" and chart.chart_design != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This chart is private."
@@ -80,14 +80,14 @@ async def upload_replay(
         for (contents, hash) in ((replay_data, replay_data_hash), (replay_config, replay_config_hash)):
             tasks.append(bucket.upload_fileobj(
                 Fileobj = contents,
-                Key=f"{level.chart_design}/{level.id}/replays/{user_id}/{hash}",
+                Key=f"{chart.chart_design}/{chart.id}/replays/{user_id}/{hash}",
                 ExtraArgs={"ContentType": "application/gzip"}
             ))
 
         if curr_leaderboard:
             batch = [
-                {"Key": f"{level.chart_design}/{level.id}/replays/{user_id}/{curr_leaderboard.replay_data_hash}"},
-                {"Key": f"{level.chart_design}/{level.id}/replays/{user_id}/{curr_leaderboard.replay_config_hash}"}
+                {"Key": f"{chart.chart_design}/{chart.id}/replays/{user_id}/{curr_leaderboard.replay_data_hash}"},
+                {"Key": f"{chart.chart_design}/{chart.id}/replays/{user_id}/{curr_leaderboard.replay_config_hash}"}
             ]
 
             tasks.append(bucket.delete_objects(Delete={"Objects": batch}))
@@ -217,7 +217,7 @@ async def delete_score(
         data["mod"] = mod
 
         if mod:
-            level = await conn.fetchrow(charts.get_chart_by_id(leaderboard.chart_id))
-            data["chart_title"] = level.title # TODO: optimize
+            chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard.chart_id))
+            data["chart_title"] = chart.title # TODO: optimize (pack fecthing chart title into the same sql request)
 
     return data

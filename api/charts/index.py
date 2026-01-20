@@ -60,7 +60,7 @@ async def main(
             else:
                 raise HTTPException(
                     status_code=fstatus.HTTP_400_BAD_REQUEST,
-                    detail="Not logged in, cannot fetch no status (private level list)",
+                    detail="Not logged in, cannot fetch no status (private chart list)",
                 )
         elif status in ["UNLISTED", "PRIVATE", "PUBLIC_MINE"]:
             if sonolus_id:
@@ -74,8 +74,7 @@ async def main(
         status = "PUBLIC"
         use_owned_by = True
     item_page_count = 10
-    if type == "random": # TODO: separate into different endpoints,
-                         # frontend though...
+    if type == "random": # TODO: separate into different endpoints (web frontend needs to be changed tho)
         if use_owned_by:
             raise HTTPException(
                 status_code=fstatus.HTTP_400_BAD_REQUEST,
