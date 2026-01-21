@@ -303,14 +303,14 @@ class ReplayUploadData(BaseModel):
     accuracy_score: int
     speed: float
 
-class Leaderboard(ReplayUploadData):
+class LeaderboardRecord(ReplayUploadData):
     submitter: str
     display_name: str
     replay_data_hash: str
     replay_config_hash: str
     chart_id: str
 
-class LeaderboardDBResponse(Leaderboard):
+class LeaderboardRecordDBResponse(LeaderboardRecord):
     display_name: str
     id: int
     created_at: datetime

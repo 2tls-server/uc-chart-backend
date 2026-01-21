@@ -1,9 +1,9 @@
 from typing import Optional, Tuple
 from database.query import ExecutableQuery, SelectQuery
-from helpers.models import LeaderboardDBResponse, Count, Leaderboard, Prefix
+from helpers.models import LeaderboardRecordDBResponse, Count, LeaderboardRecord, Prefix
 
 
-def insert_leaderboard_entry(leaderboard: Leaderboard) -> ExecutableQuery:
+def create_leaderboard_record(leaderboard: LeaderboardRecord) -> ExecutableQuery:
     return ExecutableQuery(
         """
         INSERT INTO leaderboards (submitter, replay_data_hash, replay_config_hash, chart_id, engine, grade, nperfect, ngreat, ngood, nmiss, arcade_score, accuracy_score, speed, display_name)
@@ -26,12 +26,12 @@ def insert_leaderboard_entry(leaderboard: Leaderboard) -> ExecutableQuery:
     )
 
 
-def get_leaderboard_for_chart(
+def get_leaderboards_for_chart(
     chart_id: str,
     limit: int = 10,
     page: int = 0,
     sonolus_id: Optional[str] = None,
-) -> Tuple[SelectQuery[LeaderboardDBResponse], SelectQuery[Count]]:
+) -> Tuple[SelectQuery[LeaderboardRecordDBResponse], SelectQuery[Count]]:
     """
     Returns (leaderboard_entries_query, count_query).
     Use count_query to calculate total pages.
@@ -39,7 +39,7 @@ def get_leaderboard_for_chart(
     offset = page * limit
 
     leaderboard_query = SelectQuery(
-        LeaderboardDBResponse,
+        LeaderboardRecordDBResponse,
         f"""
             SELECT 
                 l.id,
@@ -87,13 +87,13 @@ def get_leaderboard_for_chart(
         count_query,
     )
 
-def get_leaderboard_by_id(
+def get_leaderboard_record_by_id(
     chart_id: str,
-    leaderboard_id: int,
+    record_id: int,
     sonolus_id: str | None = None
-) -> SelectQuery[LeaderboardDBResponse]:
+) -> SelectQuery[LeaderboardRecordDBResponse]:
     return SelectQuery(
-        LeaderboardDBResponse,
+        LeaderboardRecordDBResponse,
         """
             SELECT 
                 l.id,
@@ -118,7 +118,7 @@ def get_leaderboard_by_id(
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1 AND l.id = $2
         """,
-        chart_id, leaderboard_id, sonolus_id
+        chart_id, record_id, sonolus_id
     )
 
 def get_leaderboard_prefix_for_user(sonolus_id: str) -> SelectQuery[Prefix]:
@@ -133,9 +133,9 @@ def get_leaderboard_prefix_for_user(sonolus_id: str) -> SelectQuery[Prefix]:
         sonolus_id
     )
 
-def get_user_leaderboard_for_chart(chart_id: str, sonolus_id: str) -> SelectQuery[LeaderboardDBResponse]:
+def get_user_leaderboard_record_for_chart(chart_id: str, sonolus_id: str) -> SelectQuery[LeaderboardRecordDBResponse]:
     return SelectQuery(
-        LeaderboardDBResponse,
+        LeaderboardRecordDBResponse,
         """
             SELECT 
                 l.id,
@@ -163,17 +163,17 @@ def get_user_leaderboard_for_chart(chart_id: str, sonolus_id: str) -> SelectQuer
         sonolus_id
     )
 
-def delete_leaderboard_entry(entry_id: int) -> ExecutableQuery:
+def delete_leaderboard_record(record_id: int) -> ExecutableQuery:
     return ExecutableQuery(
         """
         DELETE FROM leaderboards
         WHERE id = $1
         """,
-        entry_id,
+        record_id,
     )
 
 
-def delete_leaderboard_for_chart(chart_id: str) -> ExecutableQuery: # TODO: use when deleting a chart
+def delete_leaderboards_for_chart(chart_id: str) -> ExecutableQuery: # TODO: use when deleting a chart
     return ExecutableQuery(
         """
         DELETE FROM leaderboards

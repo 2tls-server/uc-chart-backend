@@ -4,7 +4,7 @@ import asyncio
 import gzip
 from typing import Literal
 
-from helpers.models import ReplayData, Leaderboard
+from helpers.models import ReplayData, LeaderboardRecord
 from helpers.session import Session, get_session
 from helpers.hashing import calculate_sha1
 from core import ChartFastAPI
@@ -49,19 +49,21 @@ async def upload_replay(
     config = await replay_config.read()
 
     replay = ReplayData.model_validate_json(gzip.decompress(data))
-    replay.result.arcadeScore = int(replay.result.arcadeScore * speed_multiplier(speed))
+    replay.result.arcadeScore = int(replay.result.arcadeScore * speed_multiplier(speed)) # TODO: stop doing this. it's reversible, but painful
+                                                                                         # surely there won't be that many replays to hit performance wall
+                                                                                         # when sorting them
 
     tasks = []
     async with app.db_acquire() as conn:
-        curr_leaderboard = await conn.fetchrow(leaderboards.get_user_leaderboard_for_chart(
+        curr_record = await conn.fetchrow(leaderboards.get_user_leaderboard_record_for_chart(
             id, user_id
         ))
 
-        if curr_leaderboard:
-            if curr_leaderboard.arcade_score >= replay.result.arcadeScore:
+        if curr_record:
+            if curr_record.arcade_score >= replay.result.arcadeScore:
                 return {"status": "unchanged"}
             
-            await conn.execute(leaderboards.delete_leaderboard_entry(curr_leaderboard.id))
+            await conn.execute(leaderboards.delete_leaderboard_record(curr_record.id))
             
         chart = await conn.fetchrow(charts.get_chart_by_id(id))
 
@@ -84,10 +86,10 @@ async def upload_replay(
                 ExtraArgs={"ContentType": "application/gzip"}
             ))
 
-        if curr_leaderboard:
+        if curr_record:
             batch = [
-                {"Key": f"{chart.chart_design}/{chart.id}/replays/{user_id}/{curr_leaderboard.replay_data_hash}"},
-                {"Key": f"{chart.chart_design}/{chart.id}/replays/{user_id}/{curr_leaderboard.replay_config_hash}"}
+                {"Key": f"{chart.chart_design}/{chart.id}/replays/{user_id}/{curr_record.replay_data_hash}"},
+                {"Key": f"{chart.chart_design}/{chart.id}/replays/{user_id}/{curr_record.replay_config_hash}"}
             ]
 
             tasks.append(bucket.delete_objects(Delete={"Objects": batch}))
@@ -95,8 +97,8 @@ async def upload_replay(
         await asyncio.gather(*tasks)
 
     async with app.db_acquire() as conn:
-        await conn.execute(leaderboards.insert_leaderboard_entry(
-            Leaderboard(
+        await conn.execute(leaderboards.create_leaderboard_record(
+            LeaderboardRecord(
                 submitter=user_id,
                 replay_data_hash=replay_data_hash,
                 replay_config_hash=replay_config_hash,
@@ -117,7 +119,7 @@ async def upload_replay(
     return {"status": "ok"}
 
 @router.get("/")
-async def get_scores(
+async def get_leaderboards(
     request: Request,
     id: str,
     page: int = Query(0, ge=0),
@@ -132,7 +134,7 @@ async def get_scores(
     app: ChartFastAPI = request.app
 
     limit = int(limit)
-    leaderboards_query, count_query = leaderboards.get_leaderboard_for_chart(id, limit, page, session.sonolus_id) 
+    leaderboards_query, count_query = leaderboards.get_leaderboards_for_chart(id, limit, page, session.sonolus_id) 
 
     async with app.db_acquire() as conn:
         count = await conn.fetchrow(count_query)
@@ -152,11 +154,11 @@ async def get_scores(
         "data": data
     }
 
-@router.get("/{leaderboard_id}")
-async def get_score(
+@router.get("/{record_id}")
+async def get_record(
     request: Request,
     id: str,
-    leaderboard_id: int,
+    record_id: int,
     session: Session = get_session()
 ):
     if len(id) != 32 or not id.isalnum():
@@ -167,12 +169,12 @@ async def get_score(
     app: ChartFastAPI = request.app
 
     async with app.db_acquire() as conn:
-        leaderboard = await conn.fetchrow(leaderboards.get_leaderboard_by_id(id, leaderboard_id, session.sonolus_id))
+        leaderboard_record = await conn.fetchrow(leaderboards.get_leaderboard_record_by_id(id, record_id, session.sonolus_id))
 
-        if not leaderboard:
+        if not leaderboard_record:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         
-    data = leaderboard.model_dump()
+    data = leaderboard_record.model_dump()
 
     user = await session.user()
     data["mod"] = user.mod or user.admin
@@ -182,11 +184,11 @@ async def get_score(
         "asset_base_url": app.s3_asset_base_url
     }
 
-@router.delete("/{leaderboard_id}")
-async def delete_score(
+@router.delete("/{record_id}")
+async def delete_record(
     request: Request,
     id: str,
-    leaderboard_id: int,
+    record_id: int,
     session: Session = get_session(
         enforce_auth=True
     )
@@ -199,25 +201,25 @@ async def delete_score(
     app: ChartFastAPI = request.app
 
     async with app.db_acquire() as conn:
-        leaderboard = await conn.fetchrow(leaderboards.get_leaderboard_by_id(id, leaderboard_id, session.sonolus_id))
+        leaderboard_record = await conn.fetchrow(leaderboards.get_leaderboard_record_by_id(id, record_id, session.sonolus_id))
 
-        if not leaderboard:
+        if not leaderboard_record:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         
         user = await session.user()
-        if not (leaderboard.owner or user.mod or user.admin):
+        if not (leaderboard_record.owner or user.mod or user.admin):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
         
-        await conn.execute(leaderboards.delete_leaderboard_entry(leaderboard_id))
+        await conn.execute(leaderboards.delete_leaderboard_record(record_id))
 
-        data = leaderboard.model_dump()
+        data = leaderboard_record.model_dump()
 
         user = await session.user()
         mod = user.mod or user.admin
         data["mod"] = mod
 
         if mod:
-            chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard.chart_id))
+            chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard_record.chart_id))
             data["chart_title"] = chart.title # TODO: optimize (pack fecthing chart title into the same sql request)
 
     return data
