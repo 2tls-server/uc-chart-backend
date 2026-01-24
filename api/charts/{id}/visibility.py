@@ -1,10 +1,9 @@
-import uuid, io, asyncio
 from core import ChartFastAPI
 
 from fastapi import APIRouter, Request, HTTPException, status
 from helpers.session import get_session, Session
 
-from database import charts
+from database import charts, leaderboards
 
 from helpers.models import ChartVisibilityData
 from helpers.webhook_handler import WebhookMessage, WebhookEmbed
@@ -40,6 +39,8 @@ async def main(
     async with app.db_acquire() as conn:
         result = await conn.fetchrow(query)
         if result:
+            await conn.execute(leaderboards.update_leaderboard_visibility(chart_id=id, status=data.status))
+
             d = result.model_dump()
             if app.config["discord"]["all-visibility-changes-webhook"].strip() != "":
                 wmsg = WebhookMessage(

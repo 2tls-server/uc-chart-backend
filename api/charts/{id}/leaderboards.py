@@ -1,3 +1,7 @@
+"""
+Unlike charts/leaderboards, returns leaderboards for a specific level
+"""
+
 import math
 from fastapi import APIRouter, File, Form, Request, HTTPException, status, UploadFile, Query
 import asyncio
@@ -112,7 +116,8 @@ async def upload_replay(
                 arcade_score=replay.result.arcadeScore,
                 accuracy_score=replay.result.accuracyScore,
                 speed=speed,
-                display_name=display_name
+                display_name=display_name,
+                public_chart=chart.status == "PUBLIC"
             )
         ))
 
@@ -174,6 +179,11 @@ async def get_record(
         if not leaderboard_record:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         
+        chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard_record.chart_id, session.sonolus_id))
+
+        if chart.status == "PRIVATE" and chart.chart_design != session.sonolus_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have access to this chart")
+        
     data = leaderboard_record.model_dump()
 
     user = await session.user()
@@ -181,6 +191,7 @@ async def get_record(
 
     return {
         "data": data,
+        "chart": chart,
         "asset_base_url": app.s3_asset_base_url
     }
 

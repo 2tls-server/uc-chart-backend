@@ -354,6 +354,20 @@ def get_chart_by_id(
         """
         return SelectQuery(ChartByID, query, *params)
 
+def get_chart_by_id_batch(
+    chart_ids: list[str]
+) -> SelectQuery[ChartByID]:
+    query = """
+        SELECT 
+            c.*,
+            c.chart_author || '#' || a.sonolus_handle AS author_full,
+            c.chart_author AS chart_design
+        FROM charts c
+        JOIN accounts a ON c.author = a.sonolus_id
+        WHERE c.id = ANY($1::text[]);
+    """
+
+    return SelectQuery(ChartByID, query, chart_ids)
 
 def delete_chart(
     chart_id: str, sonolus_id: str = None, confirm_change: bool = False

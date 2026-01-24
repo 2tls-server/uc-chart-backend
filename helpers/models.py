@@ -309,6 +309,7 @@ class LeaderboardRecord(ReplayUploadData):
     replay_data_hash: str
     replay_config_hash: str
     chart_id: str
+    public_chart: bool
 
 class LeaderboardRecordDBResponse(LeaderboardRecord):
     display_name: str

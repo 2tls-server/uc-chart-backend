@@ -17,7 +17,6 @@ async def main(
         enforce_auth=True, enforce_type=False, allow_banned_users=False
     ),
 ):
-    # TODO: remove leaderboards
     app: ChartFastAPI = request.app
 
     if len(id) != 32 or not id.isalnum():
