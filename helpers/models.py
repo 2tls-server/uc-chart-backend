@@ -62,6 +62,10 @@ class ChartVisibilityData(BaseModel):
     status: Literal["PUBLIC", "PRIVATE", "UNLISTED"]
 
 
+class ChartScheduleData(BaseModel):
+    publish_time: Optional[int]  # epoch
+
+
 class ChartUploadData(BaseModel):
     rating: int
     title: str
@@ -191,6 +195,7 @@ class ChartDBResponse(BaseModel):
     author_full: Optional[str] = None
     chart_design: str
     is_first_publish: Optional[bool] = None  # only returned on update_status
+    scheduled_publish: Optional[datetime] = None
 
     model_config = {"json_encoders": {Decimal: float}}
 

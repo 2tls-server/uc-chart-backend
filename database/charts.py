@@ -639,6 +639,68 @@ def update_status(
         )
 
 
+def update_scheduled_publish(
+    chart_id: str,
+    publish_time_seconds: Optional[int],  # none to clear
+    sonolus_id: Optional[str] = None,
+) -> SelectQuery[ChartDBResponse]:
+    if sonolus_id:
+        return SelectQuery(
+            ChartDBResponse,
+            """
+                WITH updated AS (
+                    UPDATE charts
+                    SET 
+                        scheduled_publish = CASE
+                            WHEN $1::bigint IS NULL THEN NULL
+                            ELSE to_timestamp($1::double precision)
+                        END,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $2 AND author = $3
+                    RETURNING id, scheduled_publish
+                )
+                SELECT 
+                    charts.*, 
+                    chart_author AS chart_design, 
+                    (updated.scheduled_publish IS DISTINCT FROM charts.scheduled_publish) AS schedule_changed,
+                    chart_author || '#' || accounts.sonolus_handle AS author_full
+                FROM charts
+                JOIN updated ON charts.id = updated.id
+                JOIN accounts ON charts.author = accounts.sonolus_id;
+            """,
+            publish_time_seconds,
+            chart_id,
+            sonolus_id,
+        )
+    else:
+        return SelectQuery(
+            ChartDBResponse,
+            """
+                WITH updated AS (
+                    UPDATE charts
+                    SET 
+                        scheduled_publish = CASE
+                            WHEN $1::bigint IS NULL THEN NULL
+                            ELSE to_timestamp($1::double precision)
+                        END,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = $2
+                    RETURNING id, scheduled_publish
+                )
+                SELECT 
+                    charts.*, 
+                    chart_author AS chart_design, 
+                    (updated.scheduled_publish IS DISTINCT FROM charts.scheduled_publish) AS schedule_changed,
+                    chart_author || '#' || accounts.sonolus_handle AS author_full
+                FROM charts
+                JOIN updated ON charts.id = updated.id
+                JOIN accounts ON charts.author = accounts.sonolus_id;
+            """,
+            publish_time_seconds,
+            chart_id,
+        )
+
+
 # trend
 def fetch_chart_like_trend(chart_id: str) -> SelectQuery[ChartLikeTrend]:
     return SelectQuery(

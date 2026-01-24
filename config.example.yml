@@ -34,7 +34,6 @@ discord:
   published-webhook: ""
   staff-pick-webhook: ""
   # for moderation
-  new-uploads-webhook: ""
   all-visibility-changes-webhook: ""
   comments-webhook: ""
 oauth:
