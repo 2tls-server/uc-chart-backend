@@ -195,7 +195,7 @@ class ChartDBResponse(BaseModel):
     author_full: Optional[str] = None
     chart_design: str
     is_first_publish: Optional[bool] = None  # only returned on update_status
-    scheduled_publish: Optional[datetime] = None
+    scheduled_publish: Optional[datetime]
 
     model_config = {"json_encoders": {Decimal: float}}
 

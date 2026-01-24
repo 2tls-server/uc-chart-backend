@@ -104,7 +104,8 @@ def get_chart_list(
             c.updated_at,
             c.log_like_score,
             c.chart_author || '#' || a.sonolus_handle AS author_full,
-            c.chart_author AS chart_design
+            c.chart_author AS chart_design,
+            c.scheduled_publish
     """
 
     if sonolus_id:
@@ -284,7 +285,8 @@ def get_random_charts(
             c.published_at,
             c.updated_at,
             c.chart_author || '#' || a.sonolus_handle AS author_full,
-            c.chart_author AS chart_design
+            c.chart_author AS chart_design,
+            c.scheduled_publish
     """
 
     params: list = [return_count]
