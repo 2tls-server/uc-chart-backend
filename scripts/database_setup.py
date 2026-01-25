@@ -242,14 +242,17 @@ CREATE INDEX IF NOT EXISTS idx_expires_at ON external_login_ids (expires_at);"""
         # $$
         # UPDATE charts
         # SET
-        #     status = 'PUBLIC',
+        #     status = 'PUBLIC'::chart_status,
         #     scheduled_publish = NULL,
-        #     published_at = COALESCE(published_at, CURRENT_TIMESTAMP),
-        #     updated_at = CURRENT_TIMESTAMP
+        #     updated_at = CURRENT_TIMESTAMP,
+        #     published_at = CASE
+        #         WHEN published_at IS NULL THEN CURRENT_TIMESTAMP
+        #         ELSE published_at
+        #     END
         # WHERE
         #     scheduled_publish IS NOT NULL
         #     AND scheduled_publish <= CURRENT_TIMESTAMP
-        #     AND status <> 'PUBLIC';
+        #     AND status <> 'PUBLIC'::chart_status;
         # $$
         # );
         # """
