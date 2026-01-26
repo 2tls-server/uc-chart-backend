@@ -4,7 +4,8 @@ from fastapi import APIRouter, Request, HTTPException, status
 
 from helpers.delete import delete_from_s3
 
-from database import accounts
+from database import accounts, charts
+from helpers.models import UserProfile
 
 router = APIRouter()
 
@@ -24,3 +25,27 @@ async def main_delete(request: Request, id: str):
         await conn.execute(query)
 
     return {"result": "success"}
+
+@router.get("/")
+async def get(request: Request, id: str):
+    app: ChartFastAPI = request.app
+
+    async with app.db_acquire() as conn:
+        account = await conn.fetchrow(accounts.get_public_account(id))
+
+        if not account:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        
+        _, chart_list_query = charts.get_chart_list(
+            page=0,
+            items_per_page=5,
+            owned_by=account.sonolus_id
+        )
+
+        chart_list = await conn.fetch(chart_list_query)
+    
+    return UserProfile(
+        account=account,
+        charts=chart_list if chart_list else None,
+        asset_base_url=app.s3_asset_base_url
+    )

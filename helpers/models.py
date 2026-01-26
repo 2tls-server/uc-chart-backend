@@ -113,11 +113,15 @@ class SessionData(BaseModel):
     session_key: str
     expires: int
 
-
-class Account(BaseModel):
+class PublicAccount(BaseModel):
     sonolus_id: str
     sonolus_handle: int
     sonolus_username: str
+    mod: bool = False
+    admin: bool = False
+    banned: bool = False
+
+class Account(PublicAccount):
     discord_id: Optional[int] = None
     patreon_id: Optional[str] = None
     chart_upload_cooldown: Optional[datetime] = None
@@ -128,9 +132,6 @@ class Account(BaseModel):
     subscription_details: Optional[Any] = None
     created_at: datetime
     updated_at: datetime
-    mod: bool = False
-    admin: bool = False
-    banned: bool = False
 
     @field_validator("sonolus_sessions", "oauth_details", mode="before")
     @classmethod
@@ -364,4 +365,9 @@ class ReplayData(BaseModel):
     entities: list[_ReplayData_entities]
     touches: _ReplayData_touches
     streams: list[_ReplayData_streams] | None
+    
+class UserProfile(BaseModel):
+    account: PublicAccount
+    charts: list[ChartDBResponse]
+    asset_base_url: str
     

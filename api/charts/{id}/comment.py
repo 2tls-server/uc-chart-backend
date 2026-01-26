@@ -5,7 +5,7 @@ from typing import Optional
 
 from core import ChartFastAPI
 
-from database import comments
+from database import accounts, comments
 from helpers.session import get_session, Session
 
 from helpers.models import CommentRequest
@@ -105,11 +105,12 @@ async def main(
     user = None
     if session.auth:
         user = await session.user()
-    query, count_query = comments.get_comments(
-        id, sonolus_id=user.sonolus_id if user else None, page=page
-    )
 
     async with app.db_acquire() as conn:
+        comment_query, count_query = comments.get_comments(
+            id, sonolus_id=user.sonolus_id if user else None, page=page
+        )
+
         count_result = await conn.fetchrow(count_query)
         total_count = count_result.total_count if count_result else 0
         page_count = math.ceil(total_count / 10) if total_count > 0 else 0
@@ -117,11 +118,22 @@ async def main(
         if page_count == 0 or page >= page_count:
             return {"data": [], "pageCount": page_count}
 
-        result = await conn.fetch(query)
+        result = await conn.fetch(comment_query)
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found."
             )
+        
+        account_dict = {
+            account.sonolus_id: account 
+            for account in
+            await conn.fetch(
+                accounts.get_public_account_batch(
+                    list(set([comment.commenter for comment in result]))
+                )
+            )
+        }
+
     data = [
         {
             **row.model_dump(),
@@ -129,6 +141,7 @@ async def main(
             "deleted_at": (
                 int(row.deleted_at.timestamp() * 1000) if row.deleted_at else None
             ),
+            "account": account_dict[row.commenter] # TODO front and back checks and fallbacks if None for all -_dicts
         }
         for row in result
     ]

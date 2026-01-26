@@ -13,7 +13,7 @@ from helpers.session import Session, get_session
 from helpers.hashing import calculate_sha1
 from core import ChartFastAPI
 
-from database import leaderboards, charts
+from database import leaderboards, charts, accounts
 
 router = APIRouter()
 
@@ -59,6 +59,14 @@ async def upload_replay(
 
     tasks = []
     async with app.db_acquire() as conn:
+        chart = await conn.fetchrow(charts.get_chart_by_id(id))
+
+        if chart.status == "PRIVATE" and chart.chart_design != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This chart is private."
+            )
+
         curr_record = await conn.fetchrow(leaderboards.get_user_leaderboard_record_for_chart(
             id, user_id
         ))
@@ -68,14 +76,6 @@ async def upload_replay(
                 return {"status": "unchanged"}
             
             await conn.execute(leaderboards.delete_leaderboard_record(curr_record.id))
-            
-        chart = await conn.fetchrow(charts.get_chart_by_id(id))
-
-        if chart.status == "PRIVATE" and chart.chart_design != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="This chart is private."
-            )
 
     replay_data_hash = calculate_sha1(data)
     replay_config_hash = calculate_sha1(config)
@@ -151,7 +151,22 @@ async def get_leaderboards(
             data = []
             page_count = (count.total_count + 9) // 10
         else:
-            data = [row.model_dump() for row in await conn.fetch(leaderboards_query)]
+            records = await conn.fetch(leaderboards_query)
+
+            account_dict = {
+                account.sonolus_id: account 
+                for account in
+                await conn.fetch(
+                    accounts.get_public_account_batch(
+                        list(set([record.submitter for record in records]))
+                    )
+                )
+            }
+
+            data = [{
+                **row.model_dump,
+                "account": account_dict[row.submitter]
+            } for row in records]
             page_count = (count.total_count + 9) // 10
 
     return {
@@ -179,7 +194,8 @@ async def get_record(
         if not leaderboard_record:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         
-        chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard_record.chart_id, session.sonolus_id))
+        chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard_record.chart_id))
+        submitter = await conn.fetchrow(accounts.get_public_account(leaderboard_record.submitter))
 
         if chart.status == "PRIVATE" and chart.chart_design != session.sonolus_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have access to this chart")
@@ -192,6 +208,7 @@ async def get_record(
     return {
         "data": data,
         "chart": chart,
+        "submitter": submitter,
         "asset_base_url": app.s3_asset_base_url
     }
 

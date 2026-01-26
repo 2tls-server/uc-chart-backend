@@ -5,6 +5,7 @@ from typing import Optional, Literal
 from database.query import ExecutableQuery, SelectQuery
 from helpers.models import (
     OAuth,
+    PublicAccount,
     SessionData,
     Account,
     Notification,
@@ -211,6 +212,40 @@ def get_account_from_session(
         session_key,
     )
 
+def get_public_account(sonolus_id: str) -> SelectQuery[PublicAccount]:
+    return SelectQuery(
+        PublicAccount,
+        """
+            SELECT
+                sonolus_id,
+                sonolus_handle,
+                sonolus_username,
+                mod,
+                admin,
+                banned
+            FROM accounts
+            WHERE sonolus_id = $1
+            LIMIT 1;
+        """,
+        sonolus_id
+    )
+
+def get_public_account_batch(sonolus_ids: list[str]) -> SelectQuery[PublicAccount]:
+    return SelectQuery(
+        PublicAccount,
+        """
+            SELECT
+                sonolus_id,
+                sonolus_handle,
+                sonolus_username.
+                mode,
+                admin,
+                banned
+            FROM accounts
+            WHERE sonolus_id = ANY($1::text[]);
+        """,
+        sonolus_ids
+    )
 
 def update_cooldown(sonolus_id: str, time_to_add: timedelta) -> ExecutableQuery:
     cooldown_until = datetime.now(timezone.utc) + time_to_add
