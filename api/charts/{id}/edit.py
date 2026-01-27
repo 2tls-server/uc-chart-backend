@@ -2,7 +2,7 @@ import io, asyncio, gzip
 
 from fastapi import APIRouter, Request, HTTPException, status, UploadFile, Form
 
-from database import charts
+from database import charts, leaderboards
 
 import sonolus_converters
 
@@ -37,6 +37,8 @@ async def main(
         enforce_auth=True, enforce_type="external", allow_banned_users=False
     ),
 ):
+    chart_updated = False
+
     if len(id) != 32 or not id.isalnum():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid chart ID."
@@ -151,6 +153,9 @@ async def main(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Includes unexpected file.",
             )
+        
+        chart_updated = True
+
     elif data.includes_chart:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
@@ -356,6 +361,13 @@ async def main(
                     ExtraArgs={"ContentType": content_type},
                 )
                 tasks.append(task)
+
+            if chart_updated:
+                prefix = f"{old_chart_data.chart_design}/{old_chart_data.id}/replays/"
+                objects = [obj async for obj in bucket.objects.filter(Prefix=prefix)]
+                if objects:
+                    tasks += [obj.delete() for obj in objects]
+
             await asyncio.gather(*tasks)
     query = charts.update_metadata(
         chart_id=id,
@@ -392,4 +404,7 @@ async def main(
     async with app.db_acquire() as conn:
         await conn.execute(query)
         await conn.execute(query2)
+
+        if chart_updated:
+            await conn.execute(leaderboards.delete_leaderboards(old_chart_data.id))
     return {"result": "success"}

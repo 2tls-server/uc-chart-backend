@@ -1,6 +1,6 @@
 import json
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, TypeAlias
 from datetime import datetime, date
 from typing import Any, Union
 from decimal import Decimal, ROUND_HALF_UP
@@ -371,3 +371,12 @@ class UserProfile(BaseModel):
     charts: list[ChartDBResponse]
     asset_base_url: str
     
+leaderboard_type: TypeAlias = Literal[
+    "arcade_score_speed",
+    "accuracy_score",
+    "arcade_score_no_speed",
+    "rank_match",
+    "least_combo_breaks",
+    "least_misses",
+    "perfect"
+]

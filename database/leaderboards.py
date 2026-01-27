@@ -1,6 +1,6 @@
 from typing import Literal, Optional, Tuple
 from database.query import ExecutableQuery, SelectQuery
-from helpers.models import LeaderboardRecordDBResponse, Count, LeaderboardRecord, Prefix
+from helpers.models import LeaderboardRecordDBResponse, Count, LeaderboardRecord, Prefix, leaderboard_type
 
 
 def create_leaderboard_record(record: LeaderboardRecord) -> ExecutableQuery:
@@ -47,6 +47,7 @@ def get_leaderboards_for_chart(
     chart_id: str,
     limit: int = 10,
     page: int = 0,
+    leaderboard_type: leaderboard_type = "arcade_score_speed",
     sonolus_id: Optional[str] = None,
 ) -> Tuple[SelectQuery[LeaderboardRecordDBResponse], SelectQuery[Count]]:
     """
@@ -54,6 +55,36 @@ def get_leaderboards_for_chart(
     Use count_query to calculate total pages.
     """
     offset = page * limit
+
+    sort_direction = "DESC"
+
+    match leaderboard_type:
+        case "arcade_score_speed":
+            speed_multiplier_sql = """
+                CASE
+                    WHEN l.speed IS NULL THEN 1.0
+                    ELSE
+                        CASE
+                            WHEN (FLOOR(l.speed * 10) / 10) < 1.0 THEN (FLOOR(l.speed * 10) / 10) - 0.4
+                            ELSE 1.0 + ((FLOOR(l.speed * 10) / 10) - 1.0) * 0.2
+                        END
+                END
+            """.strip()
+            sorting_clause = f"CAST(l.arcade_score * ({speed_multiplier_sql}) AS INTEGER)"
+        case "accuracy_score":
+            sorting_clause = "l.accuracy_score"
+        case "arcade_score_no_speed":
+            sorting_clause = "l.arcade_score"
+        case "rank_match":
+            sorting_clause = "(3 * l.nperfect) + (2 * l.ngreat) + (1 * l.ngood)"
+        case "least_combo_breaks":
+            sorting_clause = "l.ngood + l.nmiss"
+            sort_direction = "ASC"
+        case "least_misses":
+            sorting_clause = "l.nmiss"
+            sort_direction = "ASC"
+        case "perfect":
+            sorting_clause = "l.nperfect"
 
     leaderboard_query = SelectQuery(
         LeaderboardRecordDBResponse,
@@ -81,7 +112,7 @@ def get_leaderboards_for_chart(
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1
-            ORDER BY l.arcade_score DESC
+            ORDER BY {sorting_clause} {sort_direction}
             LIMIT $2 OFFSET $3;
         """,
         chart_id,
@@ -187,9 +218,18 @@ def delete_leaderboard_record(record_id: int) -> ExecutableQuery:
     return ExecutableQuery(
         """
         DELETE FROM leaderboards
-        WHERE id = $1
+        WHERE id = $1;
         """,
         record_id,
+    )
+
+def delete_leaderboards(chart_id: str) -> ExecutableQuery:
+    return ExecutableQuery(
+        """
+        DELETE FROM leaderboards
+        WHERE chart_id = $1;
+        """,
+        chart_id
     )
 
 def update_leaderboard_visibility(chart_id: str, status: Literal["PUBLIC", "PRIVATE", "UNLISTED"]) -> ExecutableQuery:

@@ -8,7 +8,7 @@ import asyncio
 import gzip
 from typing import Literal
 
-from helpers.models import ReplayData, LeaderboardRecord
+from helpers.models import ReplayData, LeaderboardRecord, leaderboard_type
 from helpers.session import Session, get_session
 from helpers.hashing import calculate_sha1
 from core import ChartFastAPI
@@ -16,17 +16,6 @@ from core import ChartFastAPI
 from database import leaderboards, charts, accounts
 
 router = APIRouter()
-
-def speed_multiplier(speed: float | None) -> float:
-    if speed is None:
-        return 1.0
-
-    tier = math.floor(speed * 10) / 10
-
-    if tier < 1:
-        return tier - 0.4
-    else:
-        return 1.0 + ((tier - 1.0) * 0.2)
 
 @router.post("/")
 async def upload_replay(
@@ -53,9 +42,6 @@ async def upload_replay(
     config = await replay_config.read()
 
     replay = ReplayData.model_validate_json(gzip.decompress(data))
-    replay.result.arcadeScore = int(replay.result.arcadeScore * speed_multiplier(speed)) # TODO: stop doing this. it's reversible, but painful
-                                                                                         # surely there won't be that many replays to hit performance wall
-                                                                                         # when sorting them
 
     tasks = []
     async with app.db_acquire() as conn:
@@ -129,6 +115,7 @@ async def get_leaderboards(
     id: str,
     page: int = Query(0, ge=0),
     limit: Literal["3", "10"] = "3",
+    leaderboard_type: leaderboard_type = "arcade_score_speed",
     session: Session = get_session()
 ):
     if len(id) != 32 or not id.isalnum():
@@ -139,7 +126,7 @@ async def get_leaderboards(
     app: ChartFastAPI = request.app
 
     limit = int(limit)
-    leaderboards_query, count_query = leaderboards.get_leaderboards_for_chart(id, limit, page, session.sonolus_id) 
+    leaderboards_query, count_query = leaderboards.get_leaderboards_for_chart(id, limit, page, leaderboard_type, session.sonolus_id) 
 
     async with app.db_acquire() as conn:
         count = await conn.fetchrow(count_query)
@@ -248,6 +235,6 @@ async def delete_record(
 
         if mod:
             chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard_record.chart_id))
-            data["chart_title"] = chart.title # TODO: optimize (pack fecthing chart title into the same sql request)
+            data["chart_title"] = chart.title
 
     return data
