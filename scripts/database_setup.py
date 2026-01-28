@@ -83,7 +83,8 @@ END $$;""",
     preview_file_hash TEXT,
     background_file_hash TEXT,
     background_v1_file_hash TEXT NOT NULL,
-    background_v3_file_hash TEXT NOT NULL
+    background_v3_file_hash TEXT NOT NULL,
+    scheduled_publish TIMESTAMPTZ DEFAULT NULL
 );""",
         """CREATE TABLE IF NOT EXISTS chart_likes (
     chart_id TEXT NOT NULL REFERENCES charts(id) ON DELETE CASCADE,
@@ -245,7 +246,28 @@ CREATE INDEX IF NOT EXISTS idx_expires_at ON external_login_ids (expires_at);"""
         #     'delete_expired_login_ids',
         #     '* * * * *', -- every minute
         #     'DELETE FROM external_login_ids WHERE expires_at < CURRENT_TIMESTAMP;'
-        # );"""
+        # );""",
+        # """
+        # SELECT cron.schedule(
+        # 'publish_scheduled_charts',
+        # '* * * * *', -- every minute
+        # $$
+        # UPDATE charts
+        # SET
+        #     status = 'PUBLIC'::chart_status,
+        #     scheduled_publish = NULL,
+        #     updated_at = CURRENT_TIMESTAMP,
+        #     published_at = CASE
+        #         WHEN published_at IS NULL THEN CURRENT_TIMESTAMP
+        #         ELSE published_at
+        #     END
+        # WHERE
+        #     scheduled_publish IS NOT NULL
+        #     AND scheduled_publish <= CURRENT_TIMESTAMP
+        #     AND status <> 'PUBLIC'::chart_status;
+        # $$
+        # );
+        # """
         # superuser to schedule
     ]
 
