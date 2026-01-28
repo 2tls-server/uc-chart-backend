@@ -141,7 +141,7 @@ async def main(
             "deleted_at": (
                 int(row.deleted_at.timestamp() * 1000) if row.deleted_at else None
             ),
-            "account": account_dict[row.commenter] # TODO front and back checks and fallbacks if None for all -_dicts
+            "account": account_dict.get(row.commenter)
         }
         for row in result
     ]

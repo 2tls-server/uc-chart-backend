@@ -18,7 +18,7 @@ from database import leaderboards, charts, accounts
 router = APIRouter()
 
 @router.post("/")
-async def upload_replay(
+async def upload_replay( # TODO test
     id: str,
     request: Request,
     user_id: str = Form(...),
@@ -110,7 +110,7 @@ async def upload_replay(
     return {"status": "ok"}
 
 @router.get("/")
-async def get_leaderboards(
+async def get_leaderboards( # TODO test
     request: Request,
     id: str,
     page: int = Query(0, ge=0),
@@ -152,7 +152,7 @@ async def get_leaderboards(
 
             data = [{
                 **row.model_dump,
-                "account": account_dict[row.submitter]
+                "account": account_dict.get(row.submitter)
             } for row in records]
             page_count = (count.total_count + 9) // 10
 
@@ -162,7 +162,7 @@ async def get_leaderboards(
     }
 
 @router.get("/{record_id}")
-async def get_record(
+async def get_record( # TODO test
     request: Request,
     id: str,
     record_id: int,
@@ -200,7 +200,7 @@ async def get_record(
     }
 
 @router.delete("/{record_id}")
-async def delete_record(
+async def delete_record( # TODO test
     request: Request,
     id: str,
     record_id: int,

@@ -11,7 +11,7 @@ from database import accounts, charts, leaderboards
 
 router = APIRouter()
 
-async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | None = None):
+async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | None = None): # TODO test
     async with app.db_acquire() as conn:
         if random:
             records = await conn.fetch(leaderboards.get_random_leaderboard_records(limit))
@@ -45,7 +45,7 @@ async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | N
             record_data = {
                 "data": record.model_dump(),
                 "chart": chart_dict[record.chart_id],
-                "submitter": account_dict[record.submitter],
+                "submitter": account_dict.get(record.submitter),
                 "asset_base_url": app.s3_asset_base_url
             }
 
@@ -57,7 +57,7 @@ async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | N
         return response
 
 @router.get("/random")
-async def get(
+async def get( # TODO test
     request: Request,
     limit: Literal[3, 10] = 10
 ):

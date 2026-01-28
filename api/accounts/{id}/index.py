@@ -27,7 +27,7 @@ async def main_delete(request: Request, id: str):
     return {"result": "success"}
 
 @router.get("/")
-async def get(request: Request, id: str):
+async def get(request: Request, id: str): # TODO test
     app: ChartFastAPI = request.app
 
     async with app.db_acquire() as conn:

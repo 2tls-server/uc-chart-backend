@@ -8,7 +8,6 @@ USE_FAKE_EXTERNAL_AUTH = not input(
     "Use fake external auth? Enter if yes, anything if no "
 )
 
-# TODO: support for multiple functions for the same path
 # TODO: update...
 
 @test.route("/accounts/session/external/id/", "POST")
