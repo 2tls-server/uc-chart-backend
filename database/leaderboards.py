@@ -141,8 +141,6 @@ def get_leaderboard_record_by_id(
     record_id: int,
     sonolus_id: str | None = None
 ) -> SelectQuery[LeaderboardRecordDBResponse]:
-    print(sonolus_id, type(sonolus_id))
-
     return SelectQuery(
         LeaderboardRecordDBResponse,
         f"""
@@ -165,7 +163,7 @@ def get_leaderboard_record_by_id(
                 l.speed,
                 l.display_name,
                 l.public_chart,
-                COALESCE(l.submitter = $4, FALSE) AS owner
+                COALESCE(l.submitter = $3, FALSE) AS owner
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1 AND l.id = $2
