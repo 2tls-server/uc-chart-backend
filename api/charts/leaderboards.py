@@ -16,7 +16,7 @@ async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | N
         if random:
             records = await conn.fetch(leaderboards.get_random_leaderboard_records(limit))
         else:
-            leaderboard_query, count_query = await conn.fetch(leaderboards.get_public_records(limit, page))
+            leaderboard_query, count_query = leaderboards.get_public_records(limit, page)
             records = await conn.fetch(leaderboard_query)
 
         response = {"data": []}
