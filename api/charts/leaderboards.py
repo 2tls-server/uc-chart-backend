@@ -4,14 +4,14 @@ Unlike charts/{id}/leaderboards, returns all public records
 
 import math
 from typing import Literal
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 
 from core import ChartFastAPI
 from database import accounts, charts, leaderboards
 
 router = APIRouter()
 
-async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | None = None): # TODO test
+async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | None = None):
     async with app.db_acquire() as conn:
         if random:
             records = await conn.fetch(leaderboards.get_random_leaderboard_records(limit))
@@ -59,7 +59,7 @@ async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | N
 @router.get("/random")
 async def get( # TODO test
     request: Request,
-    limit: Literal[3, 10] = 10
+    limit: int = Query(10, gt=0, le=10)
 ):
     app: ChartFastAPI = request.app
 
@@ -71,9 +71,9 @@ async def get( # TODO test
 
 
 @router.get("/")
-async def get(
+async def get( # TODO test
     request: Request,
-    limit: Literal[3, 10] = 10,
+    limit: int = Query(10, gt=0, le=10),
     page: int = 0
 ):
     app: ChartFastAPI = request.app
