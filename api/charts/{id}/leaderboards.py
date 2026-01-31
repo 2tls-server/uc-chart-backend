@@ -176,6 +176,8 @@ async def get_leaderboards( # TODO test
         "data": data
     }
 
+# TODO check leaderboard chart_prefix
+
 @router.get("/{record_id}")
 async def get_record( # TODO test
     request: Request,
