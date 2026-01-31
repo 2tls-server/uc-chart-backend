@@ -238,7 +238,7 @@ def get_public_account_batch(sonolus_ids: list[str]) -> SelectQuery[PublicAccoun
                 sonolus_id,
                 sonolus_handle,
                 sonolus_username,
-                mode,
+                mod,
                 admin,
                 banned
             FROM accounts
