@@ -146,6 +146,8 @@ async def get_leaderboards( # TODO test
     async with app.db_acquire() as conn:
         count = await conn.fetchrow(count_query)
 
+        print(list(await conn.fetch(leaderboards_query)))
+
         if count.total_count == 0:
             print("total_count = 0")
             data = []
