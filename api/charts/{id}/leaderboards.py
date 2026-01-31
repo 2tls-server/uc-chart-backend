@@ -146,8 +146,6 @@ async def get_leaderboards( # TODO test
     async with app.db_acquire() as conn:
         count = await conn.fetchrow(count_query)
 
-        print(list(await conn.fetch(leaderboards_query)), count)
-
         if count.total_count == 0:
             data = []
             page_count = 0
@@ -168,7 +166,7 @@ async def get_leaderboards( # TODO test
             }
 
             data = [{
-                **row.model_dump,
+                **row.model_dump(),
                 "account": account_dict.get(row.submitter)
             } for row in records]
             page_count = (count.total_count + 9) // 10
