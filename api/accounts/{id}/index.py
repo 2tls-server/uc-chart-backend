@@ -46,6 +46,6 @@ async def get(request: Request, id: str): # TODO test
     
     return UserProfile(
         account=account,
-        charts=chart_list if chart_list else None,
+        charts=chart_list if chart_list else [],
         asset_base_url=app.s3_asset_base_url
     )
