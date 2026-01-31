@@ -171,6 +171,7 @@ async def get_leaderboards( # TODO test
             }
 
             for row in records:
+                print("row - ")
                 print(row.model_dump())
 
             print(list(records))
