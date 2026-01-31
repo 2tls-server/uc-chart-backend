@@ -147,12 +147,15 @@ async def get_leaderboards( # TODO test
         count = await conn.fetchrow(count_query)
 
         if count.total_count == 0:
+            print("total_count = 0")
             data = []
             page_count = 0
         elif page * 10 >= count.total_count:
+            print("page * 10 >= count.total_count", page, count.total_count)
             data = []
             page_count = (count.total_count + 9) // 10
         else:
+            print("else")
             records = await conn.fetch(leaderboards_query)
 
             account_dict = {
