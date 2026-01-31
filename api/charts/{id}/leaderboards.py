@@ -17,6 +17,21 @@ from database import leaderboards, charts, accounts
 
 router = APIRouter()
 
+def speed_multiplier(speed: float | None) -> float:
+    """
+    Only used for comparing scores
+    Sorting is in SQL
+    """
+    if speed is None:
+        return 1.0
+
+    tier = int(speed * 10) / 10
+
+    if tier < 1:
+        return tier - 0.4
+    else:
+        return 1.0 + ((tier - 1.0) * 0.2)
+
 @router.post("/")
 async def upload_replay( # TODO test
     id: str,
@@ -58,7 +73,7 @@ async def upload_replay( # TODO test
         ))
 
         if curr_record:
-            if curr_record.arcade_score >= replay.result.arcadeScore:
+            if int(curr_record.arcade_score * speed_multiplier(curr_record.speed)) >= int(replay.result.arcadeScore * speed_multiplier(speed)):
                 return {"status": "unchanged"}
             
             await conn.execute(leaderboards.delete_leaderboard_record(curr_record.id))
