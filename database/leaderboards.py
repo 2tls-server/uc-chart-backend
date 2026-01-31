@@ -86,6 +86,36 @@ def get_leaderboards_for_chart(
         case "perfect":
             sorting_clause = "l.nperfect"
 
+    print(
+        f"""
+            SELECT 
+                l.id,
+                l.submitter,
+                l.replay_data_hash,
+                l.replay_config_hash,
+                l.chart_id,
+                l.created_at,
+                CONCAT(c.chart_author, '/', c.id) AS chart_prefix,
+                l.engine,
+                l.grade,
+                l.nperfect,
+                l.ngreat,
+                l.ngood,
+                l.nmiss,
+                l.arcade_score,
+                l.accuracy_score,
+                l.speed,
+                l.display_name,
+                l.public_chart,
+                COALESCE(l.submitter = $4, FALSE) AS owner
+            FROM leaderboards l
+            JOIN charts c ON l.chart_id = c.id
+            WHERE l.chart_id = $1
+            ORDER BY {sorting_clause} {sort_direction}
+            LIMIT $2 OFFSET $3;
+        """,
+    )
+
     leaderboard_query = SelectQuery(
         LeaderboardRecordDBResponse,
         f"""
