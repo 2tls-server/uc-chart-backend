@@ -168,6 +168,11 @@ async def get_leaderboards( # TODO test
                 )
             }
 
+            for row in records:
+                print(row.model_dump())
+
+            print(list(records))
+
             data = [{
                 **row.model_dump(),
                 "account": account_dict.get(row.submitter)
