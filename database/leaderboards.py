@@ -107,7 +107,7 @@ def get_leaderboards_for_chart(
                 l.accuracy_score,
                 l.speed,
                 l.display_name,
-                l.public_chart
+                l.public_chart,
                 COALESCE(c.submitter = $4, FALSE) AS owner
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
@@ -162,8 +162,8 @@ def get_leaderboard_record_by_id(
                 l.accuracy_score,
                 l.speed,
                 l.display_name,
-                l.public_chart
-                COALESCE(c.submitter = $4, FALSE) AS owner,
+                l.public_chart,
+                COALESCE(c.submitter = $4, FALSE) AS owner
             FROM leaderboards l
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1 AND l.id = $2
