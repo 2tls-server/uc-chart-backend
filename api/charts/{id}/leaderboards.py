@@ -206,8 +206,9 @@ async def get_record( # TODO test
         
     data = leaderboard_record.model_dump()
 
-    user = await session.user()
-    data["mod"] = user.mod or user.admin
+    if session.sonolus_id: # TODO check all endpoints without login
+        user = await session.user()
+        data["mod"] = user.mod or user.admin
 
     return {
         "data": data,
