@@ -18,7 +18,7 @@ import sonolus_converters
 
 from typing import Optional
 
-from pydantic import Json, ValidationError
+from pydantic import ValidationError
 
 from core import ChartFastAPI
 
@@ -31,7 +31,7 @@ async def main(
     jacket_image: UploadFile,
     chart_file: UploadFile,
     audio_file: UploadFile,
-    data: Json[ChartUploadData] = Form(...),
+    data: str = Form(...),
     preview_file: Optional[UploadFile] = None,
     background_image: Optional[UploadFile] = None,
     session: Session = get_session(
