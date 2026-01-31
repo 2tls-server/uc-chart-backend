@@ -114,6 +114,10 @@ def get_leaderboards_for_chart(
             ORDER BY {sorting_clause} {sort_direction}
             LIMIT $2 OFFSET $3;
         """,
+        chart_id,
+        limit,
+        offset,
+        sonolus_id
     )
 
     leaderboard_query = SelectQuery(
