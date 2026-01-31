@@ -173,6 +173,8 @@ async def get_leaderboards( # TODO test
             } for row in records]
             page_count = (count.total_count + 9) // 10
 
+    print(data)
+
     return {
         "pageCount": page_count,
         "data": data
