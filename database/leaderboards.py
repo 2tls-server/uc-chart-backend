@@ -21,9 +21,10 @@ def create_leaderboard_record(record: LeaderboardRecord) -> ExecutableQuery:
             accuracy_score, 
             speed, 
             display_name, 
-            public_chart
+            public_chart,
+            created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP)
         """,
         record.submitter,
         record.replay_data_hash,
