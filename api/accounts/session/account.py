@@ -15,7 +15,7 @@ router = APIRouter()
 async def main(
     request: Request,
     session: Session = get_session(
-        enforce_auth=True, enforce_type=False
+        enforce_auth=True
     ),
 ):
     app: ChartFastAPI = request.app

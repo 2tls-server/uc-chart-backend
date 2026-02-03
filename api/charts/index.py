@@ -44,7 +44,7 @@ async def main(
         "PUBLIC"
     ),
     meta_includes: Optional[str] = Query(None),
-    session: Session = get_session(enforce_auth=False, allow_banned_users=False),
+    session: Session = get_session(enforce_auth=False),
 ):
     app: ChartFastAPI = request.app
 
