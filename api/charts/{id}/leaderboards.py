@@ -2,7 +2,6 @@
 Unlike charts/leaderboards, returns leaderboards for a specific level
 """
 
-import math
 from fastapi import APIRouter, File, Form, Request, HTTPException, status, UploadFile, Query
 import asyncio
 import gzip
@@ -33,7 +32,7 @@ def speed_multiplier(speed: float | None) -> float:
         return 1.0 + ((tier - 1.0) * 0.2)
 
 @router.post("/")
-async def upload_replay( # TODO test
+async def upload_replay(
     id: str,
     request: Request,
     user_id: str = Form(...),
@@ -125,7 +124,7 @@ async def upload_replay( # TODO test
     return {"status": "ok"}
 
 @router.get("/")
-async def get_leaderboards( # TODO test
+async def get_leaderboards(
     request: Request,
     id: str,
     page: int = Query(0, ge=0),
@@ -176,10 +175,8 @@ async def get_leaderboards( # TODO test
         "data": data
     }
 
-# TODO check leaderboard chart_prefix
-
 @router.get("/{record_id}")
-async def get_record( # TODO test
+async def get_record(
     request: Request,
     id: str,
     record_id: int,
@@ -218,7 +215,7 @@ async def get_record( # TODO test
     }
 
 @router.delete("/{record_id}")
-async def delete_record( # TODO test
+async def delete_record(
     request: Request,
     id: str,
     record_id: int,

@@ -52,12 +52,12 @@ async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | N
             response["data"].append(record_data)
 
         if not random and limit != 3:
-            response["pageCount"] = math.ceil((await conn.fetchrow(count_query)) / 10)
+            response["pageCount"] = math.ceil((await conn.fetchrow(count_query)).total_count / 10)
 
         return response
 
 @router.get("/random")
-async def get( # TODO test
+async def get(
     request: Request,
     limit: int = Query(10, gt=0, le=10)
 ):
@@ -71,7 +71,7 @@ async def get( # TODO test
 
 
 @router.get("/")
-async def get( # TODO test
+async def get(
     request: Request,
     limit: int = Query(10, gt=0, le=10),
     page: int = 0

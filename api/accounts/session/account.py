@@ -15,7 +15,7 @@ router = APIRouter()
 async def main(
     request: Request,
     session: Session = get_session(
-        enforce_auth=True, enforce_type=False, allow_banned_users=False
+        enforce_auth=True, enforce_type=False
     ),
 ):
     app: ChartFastAPI = request.app
@@ -27,7 +27,7 @@ async def main(
         "created_at",
         "mod",
         "admin",
-        # "unread_notifications",
+        "banned"
     ]
     return_val = {}
     for key, value in (await session.user()).model_dump().items():
