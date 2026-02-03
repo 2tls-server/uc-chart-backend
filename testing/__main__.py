@@ -288,7 +288,7 @@ def staff_pick_chart(id: str):
 
 
 @test.route(
-    "/accounts/{id}/staff/",
+    "/accounts/{id}/staff/unmod",
     "PATCH",
     dependencies=[After(account, value="account"), After(mod)],
 )
@@ -332,13 +332,13 @@ def delete_comment(chart_id: str, comment_id: int):
     yield Body(format_path={"chart_id": chart_id, "comment_id": str(comment_id)})
 
 
-@test.route(
-    "/charts/{id}/delete/",
-    "DELETE",
-    dependencies=[After(game_auth, use_for_auth=True), After(upload_chart, value="id")],
-)
-def delete_chart(id: str):
-    yield Body(format_path={"id": id})
+# @test.route(
+#     "/charts/{id}/delete/",
+#     "DELETE",
+#     dependencies=[After(game_auth, use_for_auth=True), After(upload_chart, value="id")],
+# )
+# def delete_chart(id: str):
+#     yield Body(format_path={"id": id})
 
 
 test.start()

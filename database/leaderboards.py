@@ -238,8 +238,8 @@ def update_leaderboard_visibility(chart_id: str, status: Literal["PUBLIC", "PRIV
         """
         UPDATE leaderboards
         SET 
-            public_chart = $2,
-        WHERE chart_id = $1
+            public_chart = $2
+        WHERE chart_id = $1;
         """,
         chart_id, status == "PUBLIC"
     )
