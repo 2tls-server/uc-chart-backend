@@ -397,6 +397,8 @@ def get_leaderboard_record(chart_id: str, lb_id: int):
 def get_public_leaderboards(lb_id: int):
     response: Response = yield Body()
 
+    print(response.json())
+
     assert response.json()["data"][0]["id"] == lb_id
     yield
 
