@@ -302,6 +302,7 @@ def get_public_records(limit: int, page: int = 0) -> tuple[SelectQuery[Leaderboa
                 FROM leaderboards l
                 JOIN charts c ON l.chart_id = c.id
                 WHERE l.public_chart
+                ORDER BY l.created_at DESC
                 LIMIT $1 OFFSET $2;
             """,
             limit,
