@@ -86,14 +86,14 @@ async def upload_replay(
         for (contents, hash) in ((replay_data, replay_data_hash), (replay_config, replay_config_hash)):
             tasks.append(bucket.upload_fileobj(
                 Fileobj = contents,
-                Key=f"{chart.chart_design}/{chart.id}/replays/{user_id}/{hash}",
+                Key=f"{chart.author}/{chart.id}/replays/{user_id}/{hash}",
                 ExtraArgs={"ContentType": "application/gzip"}
             ))
 
         if curr_record:
             batch = [
-                {"Key": f"{chart.chart_design}/{chart.id}/replays/{user_id}/{curr_record.replay_data_hash}"},
-                {"Key": f"{chart.chart_design}/{chart.id}/replays/{user_id}/{curr_record.replay_config_hash}"}
+                {"Key": f"{chart.author}/{chart.id}/replays/{user_id}/{curr_record.replay_data_hash}"},
+                {"Key": f"{chart.author}/{chart.id}/replays/{user_id}/{curr_record.replay_config_hash}"}
             ]
 
             tasks.append(bucket.delete_objects(Delete={"Objects": batch}))
