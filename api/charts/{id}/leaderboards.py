@@ -29,7 +29,7 @@ def speed_multiplier(speed: float | None) -> float:
     if tier < 1:
         return tier - 0.4
     else:
-        return 1.0 + ((tier - 1.0) * 0.2)
+        return 1.0 + ((tier - 1.0) * 0.075)
 
 @router.post("/")
 async def upload_replay(
@@ -203,7 +203,7 @@ async def get_record(
         
     data = leaderboard_record.model_dump()
 
-    if session.sonolus_id: # TODO check all endpoints without login
+    if session.sonolus_id: 
         user = await session.user()
         data["mod"] = user.mod or user.admin
 

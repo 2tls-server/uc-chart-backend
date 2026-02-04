@@ -67,7 +67,7 @@ def get_leaderboards_for_chart(
                     ELSE
                         CASE
                             WHEN (FLOOR(l.speed * 10) / 10) < 1.0 THEN (FLOOR(l.speed * 10) / 10) - 0.4
-                            ELSE 1.0 + ((FLOOR(l.speed * 10) / 10) - 1.0) * 0.2
+                            ELSE 1.0 + ((FLOOR(l.speed * 10) / 10) - 1.0) * 0.075
                         END
                 END
             """.strip()
