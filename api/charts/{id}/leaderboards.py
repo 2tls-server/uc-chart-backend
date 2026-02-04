@@ -2,6 +2,7 @@
 Unlike charts/leaderboards, returns leaderboards for a specific level
 """
 
+from io import BytesIO
 from fastapi import APIRouter, File, Form, Request, HTTPException, status, UploadFile, Query
 import asyncio
 import gzip
@@ -83,9 +84,9 @@ async def upload_replay(
     async with app.s3_session_getter() as s3:
         bucket = await s3.Bucket(app.s3_bucket)
 
-        for (contents, hash) in ((replay_data, replay_data_hash), (replay_config, replay_config_hash)):
+        for (contents, hash) in ((data, config), (replay_config, replay_config_hash)):
             tasks.append(bucket.upload_fileobj(
-                Fileobj = contents,
+                Fileobj = BytesIO(contents),
                 Key=f"{chart.author}/{chart.id}/replays/{user_id}/{hash}",
                 ExtraArgs={"ContentType": "application/gzip"}
             ))
