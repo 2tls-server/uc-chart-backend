@@ -84,7 +84,7 @@ async def upload_replay(
     async with app.s3_session_getter() as s3:
         bucket = await s3.Bucket(app.s3_bucket)
 
-        for (contents, hash) in ((data, config), (replay_config, replay_config_hash)):
+        for (contents, hash) in ((data, replay_data_hash), (config, replay_config_hash)):
             tasks.append(bucket.upload_fileobj(
                 Fileobj = BytesIO(contents),
                 Key=f"{chart.author}/{chart.id}/replays/{user_id}/{hash}",
