@@ -62,7 +62,7 @@ async def upload_replay(
     async with app.db_acquire() as conn:
         chart = await conn.fetchrow(charts.get_chart_by_id(id))
 
-        if chart.status == "PRIVATE" and chart.chart_design != user_id:
+        if chart.status == "PRIVATE" and chart.author != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This chart is private."
@@ -199,7 +199,7 @@ async def get_record(
         chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard_record.chart_id))
         submitter = await conn.fetchrow(accounts.get_public_account(leaderboard_record.submitter))
 
-        if chart.status == "PRIVATE" and chart.chart_design != session.sonolus_id:
+        if chart.status == "PRIVATE" and chart.author != session.sonolus_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have access to this chart")
         
     data = leaderboard_record.model_dump()
