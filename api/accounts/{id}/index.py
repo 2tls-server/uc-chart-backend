@@ -39,6 +39,7 @@ async def get(request: Request, id: str):
         _, chart_list_query = charts.get_chart_list(
             page=0,
             items_per_page=5,
+            sort_by="likes",
             owned_by=account.sonolus_id
         )
 
