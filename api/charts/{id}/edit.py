@@ -236,6 +236,8 @@ async def main(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Includes unexpected file.",
             )
+        
+        chart_updated = True
     elif data.includes_audio:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
@@ -363,7 +365,7 @@ async def main(
                 tasks.append(task)
 
             if chart_updated:
-                prefix = f"{old_chart_data.chart_design}/{old_chart_data.id}/replays/"
+                prefix = f"{old_chart_data.author}/{old_chart_data.id}/replays/"
                 objects = [obj async for obj in bucket.objects.filter(Prefix=prefix)]
                 if objects:
                     tasks += [obj.delete() for obj in objects]
