@@ -85,7 +85,7 @@ async def read(
             accounts.get_notification(notification_id, session.sonolus_id)
         )
 
-        if not notification_id:
+        if not notification:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Failed to get.")
 
     d = notification.model_dump()

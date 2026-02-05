@@ -95,7 +95,7 @@ async def main(
             return JSONResponse(content={}, status_code=403)
 
     cooldown = user.chart_upload_cooldown
-    if cooldown:
+    if cooldown and not app.debug:
         now = datetime.now(timezone.utc)
         if now < cooldown:
             remaining = cooldown - now
@@ -185,7 +185,7 @@ async def main(
             )
             sonolus_converters.next_sekai.export(converted, score)
         elif leveldata:
-            if ld_type != "nextsekai":
+            if ld_type != "nextsekai" and not app.debug:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Incorrect LevelData: {ld_type} (expected: NextSekai)",

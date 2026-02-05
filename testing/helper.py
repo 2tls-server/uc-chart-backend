@@ -145,7 +145,7 @@ class Test:
                     path = route.path
                     if body.format_path:
                         for key, val in body.format_path.items():
-                            path = path.replace("{" + key + "}", val)
+                            path = path.replace("{" + key + "}", str(val))
 
                     response = requests.request(
                         route.method,
@@ -179,6 +179,10 @@ class Test:
                         raise
 
                     print(Fore.RED + f"FAILED | Exception: {type(e).__name__}: {e}")
+
+                    if testing_config.DEBUG:
+                        raise
+
                     self.failed_routes.append(id)
                     self.processed_routes.append(id)
                     continue

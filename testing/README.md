@@ -48,3 +48,10 @@ def handler(arg_name, second_arg):
     response: requests.Response = yield
     yield "some return value"
 ```
+
+# Needed files
+- `assets/chart.usc`
+- `assets/jacket.jpg`
+- `assets/music.mp3`
+- `assets/replay_config`
+- `assets/replay_data`

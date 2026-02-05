@@ -8,9 +8,6 @@ USE_FAKE_EXTERNAL_AUTH = not input(
     "Use fake external auth? Enter if yes, anything if no "
 )
 
-# TODO: support for multiple functions for the same path
-
-
 @test.route("/accounts/session/external/id/", "POST")
 def external_auth_step1():
     response: Response = yield
@@ -76,6 +73,15 @@ else:
 def account():
     response: Response = yield
     yield response.json()
+
+
+@test.route(
+    "/accounts/{id}/",
+    "GET",
+    dependencies=[After(account, value="account")]
+)
+def get_profile(account: dict):
+    yield Body(format_path={"id": account["sonolus_id"]})
 
 
 @test.route(
@@ -289,7 +295,7 @@ def staff_pick_chart(id: str):
 
 
 @test.route(
-    "/accounts/{id}/staff/",
+    "/accounts/{id}/staff/unmod",
     "PATCH",
     dependencies=[After(account, value="account"), After(mod)],
 )
@@ -331,6 +337,81 @@ def get_comments(id: str):
 )
 def delete_comment(chart_id: str, comment_id: int):
     yield Body(format_path={"chart_id": chart_id, "comment_id": str(comment_id)})
+
+
+@test.route(
+    "/charts/{id}/leaderboards/",
+    "POST",
+    dependencies=[After(account, value="account"), After(upload_chart, value="id")]
+)
+def upload_replay(account: dict, id: str):
+    yield Body(
+        form_data={
+            "user_id": account["sonolus_id"],
+            "display_name": "test#111111",
+            "engine_name": "NextRUSH_P",
+            "speed": 1.1,
+        },
+        files={
+            "replay_data": (
+                "jacket.jpg",
+                open("assets/replay_data", "rb"),
+                "application/gzip",
+            ),
+            "replay_config": (
+                "chart.sus",
+                open("assets/replay_config", "rb"),
+                "application/gzip",
+            ),
+        },
+        format_path={"id": id},
+        use_private_auth=True
+    )
+
+
+@test.route(
+    "/charts/{id}/leaderboards/",
+    "GET",
+    dependencies=[After(upload_chart, value="id"), After(upload_replay)]
+)
+def get_chart_leaderboards(id: str):
+    response: Response = yield Body(format_path={"id": id})
+
+    yield response.json()["data"][0]["id"]
+
+
+@test.route(
+    "/charts/{chart_id}/leaderboards/{lb_id}/",
+    "GET",
+    dependencies=[After(upload_chart, value="chart_id"), After(get_chart_leaderboards, value="lb_id")]
+)
+def get_leaderboard_record(chart_id: str, lb_id: int):
+    yield Body(format_path={"chart_id": chart_id, "lb_id": lb_id})
+
+
+@test.route(
+    "/charts/leaderboards/",
+    "GET",
+    dependencies=[After(get_chart_leaderboards, value="lb_id")]
+)
+def get_public_leaderboards(lb_id: int):
+    response: Response = yield Body()
+
+    assert response.json()["data"][0]["data"]["id"] == lb_id
+    yield
+
+
+@test.route(
+    "/charts/{chart_id}/leaderboards/{lb_id}/",
+    "DELETE",
+    dependencies=[
+        After(game_auth, use_for_auth=True), 
+        After(upload_chart, value="chart_id"), 
+        After(get_chart_leaderboards, value="lb_id")
+    ]
+)
+def get_leaderboard_record(chart_id: str, lb_id: int):
+    yield Body(format_path={"chart_id": chart_id, "lb_id": lb_id})
 
 
 @test.route(

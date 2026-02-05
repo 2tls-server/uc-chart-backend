@@ -1,6 +1,6 @@
 import json
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, TypeAlias
 from datetime import datetime, date
 from typing import Any, Union
 from decimal import Decimal, ROUND_HALF_UP
@@ -117,11 +117,15 @@ class SessionData(BaseModel):
     session_key: str
     expires: int
 
-
-class Account(BaseModel):
+class PublicAccount(BaseModel):
     sonolus_id: str
     sonolus_handle: int
     sonolus_username: str
+    mod: bool = False
+    admin: bool = False
+    banned: bool = False
+
+class Account(PublicAccount):
     discord_id: Optional[int] = None
     patreon_id: Optional[str] = None
     chart_upload_cooldown: Optional[datetime] = None
@@ -132,9 +136,6 @@ class Account(BaseModel):
     subscription_details: Optional[Any] = None
     created_at: datetime
     updated_at: datetime
-    mod: bool = False
-    admin: bool = False
-    banned: bool = False
 
     @field_validator("sonolus_sessions", "oauth_details", mode="before")
     @classmethod
@@ -297,12 +298,90 @@ class NotificationRequest(BaseModel):
 class ReadUpdate(BaseModel):
     is_read: bool
 
+class ReplayUploadData(BaseModel):
+    engine: str
+    grade: Literal["allPerfect", "fullCombo", "pass", "fail"]
+    nperfect: int
+    ngreat: int
+    ngood: int
+    nmiss: int
+    arcade_score: int
+    accuracy_score: int
+    speed: float
 
-class LeaderboardDBResponse(BaseModel):
-    id: int
+class LeaderboardRecord(ReplayUploadData):
     submitter: str
-    replay_hash: str
+    display_name: str
+    replay_data_hash: str
+    replay_config_hash: str
     chart_id: str
+    public_chart: bool
+
+class LeaderboardRecordDBResponse(LeaderboardRecord):
+    display_name: str
+    id: int
     created_at: datetime
     chart_prefix: str
-    # XXX: todo, grab perfects/greats/goods/misses, arcadeScore, accuracyScore
+    owner: bool | None = None
+
+class Prefix(BaseModel):
+    prefix: str
+
+class _ReplayData_playArea(BaseModel):
+    width: int | float
+    height: int | float
+
+class GameplayResult(BaseModel):
+    grade: Literal["allPerfect", "fullCombo", "pass", "fail"]
+    arcadeScore: int | float
+    accuracyScore: int | float
+    combo: int | float
+    perfect: int | float
+    great: int | float
+    good: int | float
+    miss: int | float
+    totalCount: int | float
+
+class _ReplayData_entities_data(BaseModel):
+    name: str
+    value: int | float
+
+class _ReplayData_entities(BaseModel):
+    data: list[_ReplayData_entities_data]
+
+class _ReplayData_touches(BaseModel):
+    l: list[int | float]
+    t: list[int | float]
+    x: list[int | float]
+    y: list[int | float]
+
+class _ReplayData_streams(BaseModel):
+    id: int | float
+    keys: list[int | float]
+    values: list[int | float]
+
+class ReplayData(BaseModel):
+    startTime: int | float
+    saveTime: int | float
+    duration: int | float
+    inputOffset: int | float
+    playArea: _ReplayData_playArea
+    result: GameplayResult
+    entities: list[_ReplayData_entities]
+    touches: _ReplayData_touches
+    streams: list[_ReplayData_streams] | None
+    
+class UserProfile(BaseModel):
+    account: PublicAccount
+    charts: list[ChartDBResponse]
+    asset_base_url: str
+    
+leaderboard_type: TypeAlias = Literal[
+    "arcade_score_speed",
+    "accuracy_score",
+    "arcade_score_no_speed",
+    "rank_match",
+    "least_combo_breaks",
+    "least_misses",
+    "perfect"
+]

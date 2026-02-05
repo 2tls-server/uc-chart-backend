@@ -80,11 +80,10 @@ class Session:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED, detail="Not logged in."
                 )
-            if not self.allow_banned_users:
-                if user.banned:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN, detail="User banned."
-                    )
+            if not self.allow_banned_users and user.banned:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="User banned."
+                )
         else:
             self.session_data = None
             self.sonolus_id = None

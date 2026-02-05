@@ -1,0 +1,86 @@
+"""
+Unlike charts/{id}/leaderboards, returns all public records
+"""
+
+import math
+from typing import Literal
+from fastapi import APIRouter, Query, Request
+
+from core import ChartFastAPI
+from database import accounts, charts, leaderboards
+
+router = APIRouter()
+
+async def get_records(random: bool, limit: int, app: ChartFastAPI, page: int | None = None):
+    async with app.db_acquire() as conn:
+        if random:
+            records = await conn.fetch(leaderboards.get_random_leaderboard_records(limit))
+        else:
+            leaderboard_query, count_query = leaderboards.get_public_records(limit, page)
+            records = await conn.fetch(leaderboard_query)
+
+        response = {"data": []}
+
+        chart_dict = {
+            chart.id: chart
+            for chart in 
+            await conn.fetch(
+                charts.get_chart_by_id_batch(
+                    list(set([record.chart_id for record in records]))
+                )
+            )
+        }
+
+        account_dict = {
+            account.sonolus_id: account 
+            for account in
+            await conn.fetch(
+                accounts.get_public_account_batch(
+                    list(set([record.submitter for record in records]))
+                )
+            )
+        }
+
+        for record in records:
+            record_data = {
+                "data": record.model_dump(),
+                "chart": chart_dict[record.chart_id],
+                "submitter": account_dict.get(record.submitter),
+                "asset_base_url": app.s3_asset_base_url
+            }
+
+            response["data"].append(record_data)
+
+        if not random and limit != 3:
+            response["pageCount"] = math.ceil((await conn.fetchrow(count_query)).total_count / 10)
+
+        return response
+
+@router.get("/random")
+async def get(
+    request: Request,
+    limit: int = Query(10, gt=0, le=10)
+):
+    app: ChartFastAPI = request.app
+
+    return await get_records(
+        random=True,
+        limit=limit,
+        app=app
+    )
+
+
+@router.get("/")
+async def get(
+    request: Request,
+    limit: int = Query(10, gt=0, le=10),
+    page: int = 0
+):
+    app: ChartFastAPI = request.app
+
+    return await get_records(
+        random=False,
+        limit=limit,
+        app=app,
+        page=page
+    )

@@ -25,7 +25,7 @@ class DBConnWrapper:
         if not fetch_result:
             return None
 
-        return map(lambda x: query.model.model_validate(dict(x)), fetch_result)
+        return [query.model.model_validate(dict(x)) for x in fetch_result]
 
     async def fetchrow(self, query: SelectQuery[T]) -> Optional[T]:
         fetch_result = await self.conn.fetchrow(query.sql, *query.args)

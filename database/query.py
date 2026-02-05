@@ -1,8 +1,6 @@
 from typing import TypeVar, Generic
 from pydantic import BaseModel
 
-# TODO: add redis
-
 T = TypeVar("T", bound=BaseModel)
 
 
