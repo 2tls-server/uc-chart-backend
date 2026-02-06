@@ -392,6 +392,18 @@ class UserProfile(BaseModel):
     asset_base_url: str
 
 
+class UserStats(BaseModel):
+    sonolus_id: str
+    sonolus_handle: int
+    # interaction stats
+    liked_charts_count: int
+    comments_count: int
+    # chart stats
+    charts_published: int
+    likes_received: int
+    comments_received: int
+
+
 leaderboard_type: TypeAlias = Literal[
     "arcade_score_speed",
     "accuracy_score",

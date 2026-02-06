@@ -48,3 +48,16 @@ async def get(request: Request, id: str):
         charts=chart_list if chart_list else [],
         asset_base_url=app.s3_asset_base_url,
     )
+
+
+@router.get("/stats/")
+async def get(request: Request, id: str):
+    app: ChartFastAPI = request.app
+
+    async with app.db_acquire() as conn:
+        account_stats = await conn.fetchrow(accounts.get_account_stats(id))
+
+        if not account_stats:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    return account_stats.model_dump()

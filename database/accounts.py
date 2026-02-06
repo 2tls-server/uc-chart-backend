@@ -11,6 +11,7 @@ from helpers.models import (
     Notification,
     NotificationList,
     Count,
+    UserStats,
 )
 
 """
@@ -499,4 +500,53 @@ def toggle_notification_read_status(
         notification_id,
         user_id,
         is_read,
+    )
+
+
+def get_account_stats(sonolus_id: str) -> SelectQuery[UserStats]:
+    return SelectQuery(
+        UserStats,
+        """
+        SELECT
+            a.sonolus_id,
+            a.sonolus_handle,
+
+            -- interaction stats
+            (
+                SELECT COUNT(*)
+                FROM chart_likes cl
+                WHERE cl.sonolus_id = a.sonolus_id
+            ) AS liked_charts_count,
+
+            (
+                SELECT COUNT(*)
+                FROM comments c
+                WHERE c.commenter = a.sonolus_id
+            ) AS comments_count,
+
+            -- chart stats
+            (
+                SELECT COUNT(*)
+                FROM charts ch
+                WHERE ch.author = a.sonolus_id
+                AND ch.visibility = 'PUBLIC'
+            ) AS charts_published,
+
+            (
+                SELECT COUNT(*)
+                FROM chart_likes cl
+                JOIN charts ch ON ch.id = cl.chart_id
+                WHERE ch.author = a.sonolus_id
+            ) AS likes_received,
+
+            (
+                SELECT COUNT(*)
+                FROM comments c
+                JOIN charts ch ON ch.id = c.chart_id
+                WHERE ch.author = a.sonolus_id
+            ) AS comments_received
+        FROM accounts a
+        WHERE a.sonolus_id = $1
+        """,
+        sonolus_id,
     )
