@@ -29,6 +29,7 @@ async def main(
     description_includes: Optional[str] = Query(None),
     artists_includes: Optional[str] = Query(None),
     author_includes: Optional[str] = Query(None),
+    sonolus_handle_is: Optional[int] = Query(None),
     sort_by: Literal[
         "created_at",
         "rating",
@@ -73,6 +74,11 @@ async def main(
     if status == "PUBLIC_MINE":
         status = "PUBLIC"
         use_owned_by = True
+    if use_owned_by and sonolus_handle_is:
+        raise HTTPException(
+            status_code=fstatus.HTTP_400_BAD_REQUEST,
+            detail="Cannot request personal chart list AND specify sonolus_handle_is, even if they are the same. Choose one!",
+        )
     item_page_count = 10
     if type == "random":
         if use_owned_by:
@@ -124,6 +130,7 @@ async def main(
             sort_order=sort_order,
             author_includes=author_includes,
             meta_includes=meta_includes,
+            sonolus_handle_is=sonolus_handle_is,
             sonolus_id=sonolus_id,
             owned_by=sonolus_id if use_owned_by else None,
         )

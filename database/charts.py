@@ -62,6 +62,7 @@ def get_chart_list(
     description_includes: Optional[str] = None,
     artists_includes: Optional[str] = None,
     author_includes: Optional[str] = None,
+    sonolus_handle_is: Optional[int] = None,
     sort_by: Literal[
         "created_at",
         "rating",
@@ -179,6 +180,9 @@ def get_chart_list(
     if owned_by:
         params.append(owned_by)
         conditions.append(f"c.author = ${len(params)}")
+    elif sonolus_handle_is:
+        params.append(sonolus_handle_is)
+        conditions.append(f"a.sonolus_handle = ${len(params)}")
 
     if title_includes:
         params.append(f"%{title_includes.lower()}%")
