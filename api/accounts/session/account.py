@@ -14,9 +14,7 @@ router = APIRouter()
 @router.get("/")
 async def main(
     request: Request,
-    session: Session = get_session(
-        enforce_auth=True
-    ),
+    session: Session = get_session(enforce_auth=True),
 ):
     app: ChartFastAPI = request.app
 
@@ -27,7 +25,7 @@ async def main(
         "created_at",
         "mod",
         "admin",
-        "banned"
+        "banned",
     ]
     return_val = {}
     for key, value in (await session.user()).model_dump().items():

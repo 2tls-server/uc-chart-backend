@@ -356,9 +356,8 @@ def get_chart_by_id(
         """
         return SelectQuery(ChartByID, query, *params)
 
-def get_chart_by_id_batch(
-    chart_ids: list[str]
-) -> SelectQuery[ChartByID]:
+
+def get_chart_by_id_batch(chart_ids: list[str]) -> SelectQuery[ChartByID]:
     query = """
         SELECT 
             c.*,
@@ -370,6 +369,7 @@ def get_chart_by_id_batch(
     """
 
     return SelectQuery(ChartByID, query, chart_ids)
+
 
 def delete_chart(
     chart_id: str, sonolus_id: str = None, confirm_change: bool = False

@@ -123,11 +123,10 @@ async def main(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found."
             )
-        
+
         account_dict = {
-            account.sonolus_id: account 
-            for account in
-            await conn.fetch(
+            account.sonolus_id: account
+            for account in await conn.fetch(
                 accounts.get_public_account_batch(
                     list(set([comment.commenter for comment in result]))
                 )
@@ -141,7 +140,7 @@ async def main(
             "deleted_at": (
                 int(row.deleted_at.timestamp() * 1000) if row.deleted_at else None
             ),
-            "account": account_dict.get(row.commenter)
+            "account": account_dict.get(row.commenter),
         }
         for row in result
     ]

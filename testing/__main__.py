@@ -8,6 +8,7 @@ USE_FAKE_EXTERNAL_AUTH = not input(
     "Use fake external auth? Enter if yes, anything if no "
 )
 
+
 @test.route("/accounts/session/external/id/", "POST")
 def external_auth_step1():
     response: Response = yield
@@ -75,11 +76,7 @@ def account():
     yield response.json()
 
 
-@test.route(
-    "/accounts/{id}/",
-    "GET",
-    dependencies=[After(account, value="account")]
-)
+@test.route("/accounts/{id}/", "GET", dependencies=[After(account, value="account")])
 def get_profile(account: dict):
     yield Body(format_path={"id": account["sonolus_id"]})
 
@@ -342,7 +339,7 @@ def delete_comment(chart_id: str, comment_id: int):
 @test.route(
     "/charts/{id}/leaderboards/",
     "POST",
-    dependencies=[After(account, value="account"), After(upload_chart, value="id")]
+    dependencies=[After(account, value="account"), After(upload_chart, value="id")],
 )
 def upload_replay(account: dict, id: str):
     yield Body(
@@ -365,14 +362,14 @@ def upload_replay(account: dict, id: str):
             ),
         },
         format_path={"id": id},
-        use_private_auth=True
+        use_private_auth=True,
     )
 
 
 @test.route(
     "/charts/{id}/leaderboards/",
     "GET",
-    dependencies=[After(upload_chart, value="id"), After(upload_replay)]
+    dependencies=[After(upload_chart, value="id"), After(upload_replay)],
 )
 def get_chart_leaderboards(id: str):
     response: Response = yield Body(format_path={"id": id})
@@ -383,7 +380,10 @@ def get_chart_leaderboards(id: str):
 @test.route(
     "/charts/{chart_id}/leaderboards/{lb_id}/",
     "GET",
-    dependencies=[After(upload_chart, value="chart_id"), After(get_chart_leaderboards, value="lb_id")]
+    dependencies=[
+        After(upload_chart, value="chart_id"),
+        After(get_chart_leaderboards, value="lb_id"),
+    ],
 )
 def get_leaderboard_record(chart_id: str, lb_id: int):
     yield Body(format_path={"chart_id": chart_id, "lb_id": lb_id})
@@ -392,7 +392,7 @@ def get_leaderboard_record(chart_id: str, lb_id: int):
 @test.route(
     "/charts/leaderboards/",
     "GET",
-    dependencies=[After(get_chart_leaderboards, value="lb_id")]
+    dependencies=[After(get_chart_leaderboards, value="lb_id")],
 )
 def get_public_leaderboards(lb_id: int):
     response: Response = yield Body()
@@ -405,10 +405,10 @@ def get_public_leaderboards(lb_id: int):
     "/charts/{chart_id}/leaderboards/{lb_id}/",
     "DELETE",
     dependencies=[
-        After(game_auth, use_for_auth=True), 
-        After(upload_chart, value="chart_id"), 
-        After(get_chart_leaderboards, value="lb_id")
-    ]
+        After(game_auth, use_for_auth=True),
+        After(upload_chart, value="chart_id"),
+        After(get_chart_leaderboards, value="lb_id"),
+    ],
 )
 def get_leaderboard_record(chart_id: str, lb_id: int):
     yield Body(format_path={"chart_id": chart_id, "lb_id": lb_id})

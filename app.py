@@ -33,8 +33,8 @@ async def no_unhandled_exceptions(request: Request, call_next):
     except Exception:
         traceback.print_exc()
         return Response(
-            content="Unhandled error. Report to discord.gg/UntitledCharts", 
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            content="Unhandled error. Report to discord.gg/UntitledCharts",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 

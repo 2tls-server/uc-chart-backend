@@ -146,7 +146,11 @@ async def main(
     async with app.db_acquire() as conn:
         result = await conn.fetchrow(query)
         if result:
-            await conn.execute(leaderboards.update_leaderboard_visibility(chart_id=id, status=data.status))
+            await conn.execute(
+                leaderboards.update_leaderboard_visibility(
+                    chart_id=id, status=data.status
+                )
+            )
 
             d = result.model_dump()
             if app.config["discord"]["all-visibility-changes-webhook"].strip() != "":

@@ -153,7 +153,7 @@ async def main(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Includes unexpected file.",
             )
-        
+
         chart_updated = True
 
     elif data.includes_chart:
@@ -236,7 +236,7 @@ async def main(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Includes unexpected file.",
             )
-        
+
         chart_updated = True
     elif data.includes_audio:
         raise HTTPException(

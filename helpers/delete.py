@@ -3,13 +3,16 @@ from core import ChartFastAPI
 from .models import Prefix
 from database import leaderboards
 
+
 async def delete_from_s3(app: ChartFastAPI, account_id: str):
     bucket_name = app.s3_bucket
 
     prefixes: list[Prefix] = []
 
     async with app.db_acquire() as conn:
-        prefixes.extend(await conn.fetch(leaderboards.get_leaderboard_prefix_for_user(account_id)))
+        prefixes.extend(
+            await conn.fetch(leaderboards.get_leaderboard_prefix_for_user(account_id))
+        )
 
     async with app.s3_session_getter() as s3:
         bucket = await s3.Bucket(bucket_name)

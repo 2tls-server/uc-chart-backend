@@ -26,6 +26,7 @@ async def main_delete(request: Request, id: str):
 
     return {"result": "success"}
 
+
 @router.get("/")
 async def get(request: Request, id: str):
     app: ChartFastAPI = request.app
@@ -35,18 +36,15 @@ async def get(request: Request, id: str):
 
         if not account:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-        
+
         _, chart_list_query = charts.get_chart_list(
-            page=0,
-            items_per_page=5,
-            sort_by="likes",
-            owned_by=account.sonolus_id
+            page=0, items_per_page=5, sort_by="likes", owned_by=account.sonolus_id
         )
 
         chart_list = await conn.fetch(chart_list_query)
-    
+
     return UserProfile(
         account=account,
         charts=chart_list if chart_list else [],
-        asset_base_url=app.s3_asset_base_url
+        asset_base_url=app.s3_asset_base_url,
     )

@@ -117,6 +117,7 @@ class SessionData(BaseModel):
     session_key: str
     expires: int
 
+
 class PublicAccount(BaseModel):
     sonolus_id: str
     sonolus_handle: int
@@ -124,6 +125,7 @@ class PublicAccount(BaseModel):
     mod: bool = False
     admin: bool = False
     banned: bool = False
+
 
 class Account(PublicAccount):
     discord_id: Optional[int] = None
@@ -298,6 +300,7 @@ class NotificationRequest(BaseModel):
 class ReadUpdate(BaseModel):
     is_read: bool
 
+
 class ReplayUploadData(BaseModel):
     engine: str
     grade: Literal["allPerfect", "fullCombo", "pass", "fail"]
@@ -309,6 +312,7 @@ class ReplayUploadData(BaseModel):
     accuracy_score: int
     speed: float
 
+
 class LeaderboardRecord(ReplayUploadData):
     submitter: str
     display_name: str
@@ -317,6 +321,7 @@ class LeaderboardRecord(ReplayUploadData):
     chart_id: str
     public_chart: bool
 
+
 class LeaderboardRecordDBResponse(LeaderboardRecord):
     display_name: str
     id: int
@@ -324,12 +329,15 @@ class LeaderboardRecordDBResponse(LeaderboardRecord):
     chart_prefix: str
     owner: bool | None = None
 
+
 class Prefix(BaseModel):
     prefix: str
+
 
 class _ReplayData_playArea(BaseModel):
     width: int | float
     height: int | float
+
 
 class GameplayResult(BaseModel):
     grade: Literal["allPerfect", "fullCombo", "pass", "fail"]
@@ -342,12 +350,15 @@ class GameplayResult(BaseModel):
     miss: int | float
     totalCount: int | float
 
+
 class _ReplayData_entities_data(BaseModel):
     name: str
     value: int | float
 
+
 class _ReplayData_entities(BaseModel):
     data: list[_ReplayData_entities_data]
+
 
 class _ReplayData_touches(BaseModel):
     l: list[int | float]
@@ -355,10 +366,12 @@ class _ReplayData_touches(BaseModel):
     x: list[int | float]
     y: list[int | float]
 
+
 class _ReplayData_streams(BaseModel):
     id: int | float
     keys: list[int | float]
     values: list[int | float]
+
 
 class ReplayData(BaseModel):
     startTime: int | float
@@ -370,12 +383,14 @@ class ReplayData(BaseModel):
     entities: list[_ReplayData_entities]
     touches: _ReplayData_touches
     streams: list[_ReplayData_streams] | None
-    
+
+
 class UserProfile(BaseModel):
     account: PublicAccount
     charts: list[ChartDBResponse]
     asset_base_url: str
-    
+
+
 leaderboard_type: TypeAlias = Literal[
     "arcade_score_speed",
     "accuracy_score",
@@ -383,5 +398,5 @@ leaderboard_type: TypeAlias = Literal[
     "rank_match",
     "least_combo_breaks",
     "least_misses",
-    "perfect"
+    "perfect",
 ]

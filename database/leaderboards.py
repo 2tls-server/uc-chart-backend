@@ -1,6 +1,12 @@
 from typing import Literal, Optional, Tuple
 from database.query import ExecutableQuery, SelectQuery
-from helpers.models import LeaderboardRecordDBResponse, Count, LeaderboardRecord, Prefix, leaderboard_type
+from helpers.models import (
+    LeaderboardRecordDBResponse,
+    Count,
+    LeaderboardRecord,
+    Prefix,
+    leaderboard_type,
+)
 
 
 def create_leaderboard_record(record: LeaderboardRecord) -> ExecutableQuery:
@@ -40,7 +46,7 @@ def create_leaderboard_record(record: LeaderboardRecord) -> ExecutableQuery:
         record.accuracy_score,
         record.speed,
         record.display_name,
-        record.public_chart
+        record.public_chart,
     )
 
 
@@ -71,7 +77,9 @@ def get_leaderboards_for_chart(
                         END
                 END
             """.strip()
-            sorting_clause = f"CAST(l.arcade_score * ({speed_multiplier_sql}) AS INTEGER)"
+            sorting_clause = (
+                f"CAST(l.arcade_score * ({speed_multiplier_sql}) AS INTEGER)"
+            )
         case "accuracy_score":
             sorting_clause = "l.accuracy_score"
         case "arcade_score_no_speed":
@@ -119,7 +127,7 @@ def get_leaderboards_for_chart(
         chart_id,
         limit,
         offset,
-        sonolus_id
+        sonolus_id,
     )
 
     count_query = SelectQuery(
@@ -137,10 +145,9 @@ def get_leaderboards_for_chart(
         count_query,
     )
 
+
 def get_leaderboard_record_by_id(
-    chart_id: str,
-    record_id: int,
-    sonolus_id: str | None = None
+    chart_id: str, record_id: int, sonolus_id: str | None = None
 ) -> SelectQuery[LeaderboardRecordDBResponse]:
     return SelectQuery(
         LeaderboardRecordDBResponse,
@@ -169,8 +176,11 @@ def get_leaderboard_record_by_id(
             JOIN charts c ON l.chart_id = c.id
             WHERE l.chart_id = $1 AND l.id = $2
         """,
-        chart_id, record_id, sonolus_id
+        chart_id,
+        record_id,
+        sonolus_id,
     )
+
 
 def get_leaderboard_prefix_for_user(sonolus_id: str) -> SelectQuery[Prefix]:
     return SelectQuery(
@@ -181,10 +191,13 @@ def get_leaderboard_prefix_for_user(sonolus_id: str) -> SelectQuery[Prefix]:
             JOIN charts c ON l.chart_id = c.id
             WHERE l.submitter = $1;
         """,
-        sonolus_id
+        sonolus_id,
     )
 
-def get_user_leaderboard_record_for_chart(chart_id: str, sonolus_id: str) -> SelectQuery[LeaderboardRecordDBResponse]:
+
+def get_user_leaderboard_record_for_chart(
+    chart_id: str, sonolus_id: str
+) -> SelectQuery[LeaderboardRecordDBResponse]:
     return SelectQuery(
         LeaderboardRecordDBResponse,
         """
@@ -212,8 +225,9 @@ def get_user_leaderboard_record_for_chart(chart_id: str, sonolus_id: str) -> Sel
             WHERE l.chart_id = $1 AND l.submitter = $2;
         """,
         chart_id,
-        sonolus_id
+        sonolus_id,
     )
+
 
 def delete_leaderboard_record(record_id: int) -> ExecutableQuery:
     return ExecutableQuery(
@@ -224,16 +238,20 @@ def delete_leaderboard_record(record_id: int) -> ExecutableQuery:
         record_id,
     )
 
+
 def delete_leaderboards(chart_id: str) -> ExecutableQuery:
     return ExecutableQuery(
         """
         DELETE FROM leaderboards
         WHERE chart_id = $1;
         """,
-        chart_id
+        chart_id,
     )
 
-def update_leaderboard_visibility(chart_id: str, status: Literal["PUBLIC", "PRIVATE", "UNLISTED"]) -> ExecutableQuery:
+
+def update_leaderboard_visibility(
+    chart_id: str, status: Literal["PUBLIC", "PRIVATE", "UNLISTED"]
+) -> ExecutableQuery:
     return ExecutableQuery(
         """
         UPDATE leaderboards
@@ -241,10 +259,14 @@ def update_leaderboard_visibility(chart_id: str, status: Literal["PUBLIC", "PRIV
             public_chart = $2
         WHERE chart_id = $1;
         """,
-        chart_id, status == "PUBLIC"
+        chart_id,
+        status == "PUBLIC",
     )
 
-def get_random_leaderboard_records(limit: int) -> SelectQuery[LeaderboardRecordDBResponse]:
+
+def get_random_leaderboard_records(
+    limit: int,
+) -> SelectQuery[LeaderboardRecordDBResponse]:
     return SelectQuery(
         LeaderboardRecordDBResponse,
         """
@@ -272,10 +294,13 @@ def get_random_leaderboard_records(limit: int) -> SelectQuery[LeaderboardRecordD
             WHERE l.public_chart
             ORDER BY RANDOM() LIMIT $1;
         """,
-        limit
+        limit,
     )
 
-def get_public_records(limit: int, page: int = 0) -> tuple[SelectQuery[LeaderboardRecordDBResponse], SelectQuery[Count]]:
+
+def get_public_records(
+    limit: int, page: int = 0
+) -> tuple[SelectQuery[LeaderboardRecordDBResponse], SelectQuery[Count]]:
     return (
         SelectQuery(
             LeaderboardRecordDBResponse,
@@ -306,7 +331,7 @@ def get_public_records(limit: int, page: int = 0) -> tuple[SelectQuery[Leaderboa
                 LIMIT $1 OFFSET $2;
             """,
             limit,
-            page * limit
+            page * limit,
         ),
         SelectQuery(
             Count,
@@ -315,5 +340,5 @@ def get_public_records(limit: int, page: int = 0) -> tuple[SelectQuery[Leaderboa
                 FROM leaderboards l
                 WHERE l.public_chart;
             """,
-        )
+        ),
     )
