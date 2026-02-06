@@ -196,7 +196,7 @@ async def get_leaderboards(
     return {"pageCount": page_count, "data": data}
 
 
-@router.get("/{record_id}")
+@router.get("/{record_id}/")
 async def get_record(
     request: Request, id: str, record_id: int, session: Session = get_session()
 ):
