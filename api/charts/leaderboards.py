@@ -64,7 +64,7 @@ async def get_records(
         return response
 
 
-@router.get("/random")
+@router.get("/random/")
 async def get(request: Request, limit: int = Query(10, gt=0, le=10)):
     app: ChartFastAPI = request.app
 

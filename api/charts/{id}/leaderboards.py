@@ -240,7 +240,7 @@ async def get_record(
     }
 
 
-@router.delete("/{record_id}")
+@router.delete("/{record_id}/")
 async def delete_record(
     request: Request,
     id: str,
