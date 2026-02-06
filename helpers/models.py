@@ -177,6 +177,7 @@ class ChartDBResponse(BaseModel):
     id: str
     rating: Union[int, Decimal]
     author: str  # author sonolus id
+    author_handle: int  # author sonolus handle
     title: str
     staff_pick: bool
     artists: Optional[str] = None

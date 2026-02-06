@@ -104,6 +104,7 @@ def get_chart_list(
             c.updated_at,
             c.log_like_score,
             c.chart_author || '#' || a.sonolus_handle AS author_full,
+            a.sonolus_handle as author_handle,
             c.chart_author AS chart_design,
             c.scheduled_publish
     """
@@ -285,6 +286,7 @@ def get_random_charts(
             c.published_at,
             c.updated_at,
             c.chart_author || '#' || a.sonolus_handle AS author_full,
+            a.sonolus_handle as author_handle,
             c.chart_author AS chart_design,
             c.scheduled_publish
     """
@@ -383,8 +385,13 @@ def delete_chart(
             ChartDBResponse,
             """
                 DELETE FROM charts
-                WHERE id = $1
-                RETURNING *, chart_author AS chart_design;
+                USING accounts a
+                WHERE charts.id = $1
+                AND charts.author = a.sonolus_id
+                RETURNING
+                    charts.*,
+                    charts.chart_author AS chart_design,
+                    a.sonolus_handle AS author_handle;
             """,
             chart_id,
         )
@@ -393,8 +400,14 @@ def delete_chart(
             ChartDBResponse,
             """
                 DELETE FROM charts
-                WHERE id = $1 AND author = $2
-                RETURNING *, chart_author AS chart_design;
+                USING accounts a
+                WHERE charts.id = $1
+                AND charts.author = $2
+                AND charts.author = a.sonolus_id
+                RETURNING
+                    charts.*,
+                    charts.chart_author AS chart_design,
+                    a.sonolus_handle AS author_handle;
             """,
             chart_id,
             sonolus_id,
@@ -561,7 +574,8 @@ def set_staff_pick(chart_id: str, value: bool) -> SelectQuery[ChartDBResponse]:
         SELECT 
             charts.*, 
             charts.chart_author AS chart_design,
-            charts.chart_author || '#' || accounts.sonolus_handle AS author_full
+            charts.chart_author || '#' || accounts.sonolus_handle AS author_full,
+            accounts.sonolus_handle AS author_handle
         FROM charts
         JOIN updated ON charts.id = updated.id
         JOIN accounts ON charts.author = accounts.sonolus_id;
@@ -616,7 +630,8 @@ def update_status(
                     charts.*, 
                     chart_author AS chart_design, 
                     (updated.published_at IS DISTINCT FROM charts.published_at) AS is_first_publish,
-                    chart_author || '#' || accounts.sonolus_handle AS author_full
+                    chart_author || '#' || accounts.sonolus_handle AS author_full,
+                    accounts.sonolus_handle AS author_handle
                 FROM charts
                 JOIN updated ON charts.id = updated.id
                 JOIN accounts ON charts.author = accounts.sonolus_id;
@@ -645,7 +660,8 @@ def update_status(
                     charts.*, 
                     chart_author AS chart_design, 
                     (updated.published_at IS DISTINCT FROM charts.published_at) AS is_first_publish,
-                    chart_author || '#' || accounts.sonolus_handle AS author_full
+                    chart_author || '#' || accounts.sonolus_handle AS author_full,
+                    accounts.sonolus_handle AS author_handle
                 FROM charts
                 JOIN updated ON charts.id = updated.id
                 JOIN accounts ON charts.author = accounts.sonolus_id;
@@ -679,7 +695,8 @@ def update_scheduled_publish(
                     charts.*, 
                     chart_author AS chart_design, 
                     (updated.scheduled_publish IS DISTINCT FROM charts.scheduled_publish) AS schedule_changed,
-                    chart_author || '#' || accounts.sonolus_handle AS author_full
+                    chart_author || '#' || accounts.sonolus_handle AS author_full,
+                    accounts.sonolus_handle AS author_handle
                 FROM charts
                 JOIN updated ON charts.id = updated.id
                 JOIN accounts ON charts.author = accounts.sonolus_id;
@@ -707,7 +724,8 @@ def update_scheduled_publish(
                     charts.*, 
                     chart_author AS chart_design, 
                     (updated.scheduled_publish IS DISTINCT FROM charts.scheduled_publish) AS schedule_changed,
-                    chart_author || '#' || accounts.sonolus_handle AS author_full
+                    chart_author || '#' || accounts.sonolus_handle AS author_full,
+                    accounts.sonolus_handle AS author_handle
                 FROM charts
                 JOIN updated ON charts.id = updated.id
                 JOIN accounts ON charts.author = accounts.sonolus_id;
