@@ -25,4 +25,13 @@ async def main(
         if not account:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "account not found")
 
-    return PublicAccount.model_validate(account).model_dump()
+    return account.model_dump(
+        include=[
+            "sonolus_id",
+            "sonolus_handle",
+            "sonolus_username",
+            "mod",
+            "admin",
+            "banned",
+        ]
+    )
