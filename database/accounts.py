@@ -189,6 +189,19 @@ def create_account_if_not_exists_and_new_session(
     return upsert_query, session_query
 
 
+def get_account_from_handle(handle: int) -> SelectQuery[Account]:
+    return SelectQuery(
+        Account,
+        f"""
+            SELECT *
+            FROM accounts
+            WHERE sonolus_handle = $1
+            LIMIT 1;
+        """,
+        handle,
+    )
+
+
 def get_account_from_session(
     sonolus_id: str, session_key: str, session_type: str
 ) -> SelectQuery[Account]:
