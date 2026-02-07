@@ -342,7 +342,8 @@ def get_chart_by_id(
                 c.*,
                 c.chart_author || '#' || a.sonolus_handle AS author_full,
                 (cl.sonolus_id IS NOT NULL) AS liked,
-                c.chart_author AS chart_design
+                c.chart_author AS chart_design,
+                a.sonolus_handle as author_handle
             FROM charts c
             JOIN accounts a ON c.author = a.sonolus_id
             LEFT JOIN chart_likes cl 
@@ -355,7 +356,8 @@ def get_chart_by_id(
             SELECT 
                 c.*,
                 c.chart_author || '#' || a.sonolus_handle AS author_full,
-                c.chart_author AS chart_design
+                c.chart_author AS chart_design,
+                a.sonolus_handle as author_handle
             FROM charts c
             JOIN accounts a ON c.author = a.sonolus_id
             WHERE c.id = $1;
@@ -368,7 +370,8 @@ def get_chart_by_id_batch(chart_ids: list[str]) -> SelectQuery[ChartByID]:
         SELECT 
             c.*,
             c.chart_author || '#' || a.sonolus_handle AS author_full,
-            c.chart_author AS chart_design
+            c.chart_author AS chart_design,
+            a.sonolus_handle as author_handle
         FROM charts c
         JOIN accounts a ON c.author = a.sonolus_id
         WHERE c.id = ANY($1::text[]);
