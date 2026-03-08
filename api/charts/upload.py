@@ -126,60 +126,52 @@ async def main(
                 detail="Uploaded files exceed file size limit.",
             )
 
-    s3_uploads = []
     chart_id = str(uuid.uuid4()).replace("-", "")
 
-    jacket_bytes = await get_and_check_file(jacket_image, "image")
-    v1, v3, jacket_bytes = await app.run_blocking(
-        generate_backgrounds_resize_jacket, jacket_bytes
-    )
-    jacket_hash = calculate_sha1(jacket_bytes)
-    v1_hash = calculate_sha1(v1)
-    s3_uploads.append(
-        {
-            "path": f"{session.sonolus_id}/{chart_id}/{v1_hash}",
-            "hash": v1_hash,
-            "bytes": v1,
-            "content-type": "image/png",
-        }
-    )
-    v3_hash = calculate_sha1(v3)
-    s3_uploads.append(
-        {
-            "path": f"{session.sonolus_id}/{chart_id}/{v3_hash}",
-            "hash": v3_hash,
-            "bytes": v3,
-            "content-type": "image/png",
-        }
-    )
-    s3_uploads.append(
-        {
-            "path": f"{session.sonolus_id}/{chart_id}/{jacket_hash}",
-            "hash": jacket_hash,
-            "bytes": jacket_bytes,
-            "content-type": "image/png",
-        }
-    )
+    file_read_tasks = [
+        get_and_check_file(jacket_image, "image"),
+        chart_file.read(),
+        get_and_check_file(audio_file, "audio/mpeg"),
+    ]
 
-    result = sonolus_converters.detect((await chart_file.read()))
-    await chart_file.seek(0)
+    if preview_file:
+        file_read_tasks.append(get_and_check_file(preview_file, "audio/mpeg"))
+    if background_image:
+        file_read_tasks.append(get_and_check_file(background_image, "image/png"))
+
+    file_results = await asyncio.gather(*file_read_tasks)
+
+    jacket_bytes_original = file_results[0]
+    chart_bytes_raw = file_results[1]
+    audio_bytes = file_results[2]
+
+    result_idx = 3
+    preview_bytes = None
+    background_bytes = None
+
+    if preview_file:
+        preview_bytes = file_results[result_idx]
+        result_idx += 1
+    if background_image:
+        background_bytes = file_results[result_idx]
+
+    result = sonolus_converters.detect(chart_bytes_raw)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file format."
         )
-    chart_bytes = await chart_file.read()
 
-    def convert() -> bytes:
+    def convert_chart() -> bytes:
         if result[0] == "sus":
             converted = io.BytesIO()
             score = sonolus_converters.sus.load(
-                io.TextIOWrapper(io.BytesIO(chart_bytes), encoding="utf-8")
+                io.TextIOWrapper(io.BytesIO(chart_bytes_raw), encoding="utf-8")
             )
             sonolus_converters.next_sekai.export(converted, score)
         elif result[0] == "usc":
             converted = io.BytesIO()
             score = sonolus_converters.usc.load(
-                io.TextIOWrapper(io.BytesIO(chart_bytes), encoding="utf-8")
+                io.TextIOWrapper(io.BytesIO(chart_bytes_raw), encoding="utf-8")
             )
             sonolus_converters.next_sekai.export(converted, score)
         elif result[0] == "lvd":
@@ -193,40 +185,85 @@ async def main(
                 with gzip.GzipFile(
                     fileobj=compressed_data, mode="wb", filename="LevelData", mtime=0
                 ) as f:
-                    f.write(chart_bytes)
+                    f.write(chart_bytes_raw)
                 compressed_data.seek(0)
                 return compressed_data.getvalue()
-            return chart_bytes
+            return chart_bytes_raw
         return converted.read()
 
     try:
-        chart_bytes = await app.run_blocking(convert)
+        (v1, v3, jacket_bytes), chart_bytes = await asyncio.gather(
+            app.run_blocking(generate_backgrounds_resize_jacket, jacket_bytes_original),
+            app.run_blocking(convert_chart),
+        )
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    chart_hash = calculate_sha1(chart_bytes)
-    s3_uploads.append(
+
+    hash_tasks = [
+        app.run_blocking(calculate_sha1, jacket_bytes),
+        app.run_blocking(calculate_sha1, v1),
+        app.run_blocking(calculate_sha1, v3),
+        app.run_blocking(calculate_sha1, chart_bytes),
+        app.run_blocking(calculate_sha1, audio_bytes),
+    ]
+
+    if preview_bytes:
+        hash_tasks.append(app.run_blocking(calculate_sha1, preview_bytes))
+    if background_bytes:
+        hash_tasks.append(app.run_blocking(calculate_sha1, background_bytes))
+
+    hashes = await asyncio.gather(*hash_tasks)
+
+    jacket_hash = hashes[0]
+    v1_hash = hashes[1]
+    v3_hash = hashes[2]
+    chart_hash = hashes[3]
+    audio_hash = hashes[4]
+
+    hash_idx = 5
+    preview_hash = None
+    background_hash = None
+
+    if preview_bytes:
+        preview_hash = hashes[hash_idx]
+        hash_idx += 1
+    if background_bytes:
+        background_hash = hashes[hash_idx]
+
+    s3_uploads = [
+        {
+            "path": f"{session.sonolus_id}/{chart_id}/{v1_hash}",
+            "hash": v1_hash,
+            "bytes": v1,
+            "content-type": "image/png",
+        },
+        {
+            "path": f"{session.sonolus_id}/{chart_id}/{v3_hash}",
+            "hash": v3_hash,
+            "bytes": v3,
+            "content-type": "image/png",
+        },
+        {
+            "path": f"{session.sonolus_id}/{chart_id}/{jacket_hash}",
+            "hash": jacket_hash,
+            "bytes": jacket_bytes,
+            "content-type": "image/png",
+        },
         {
             "path": f"{session.sonolus_id}/{chart_id}/{chart_hash}",
             "hash": chart_hash,
             "bytes": chart_bytes,
             "content-type": "application/gzip",
-        }
-    )
-
-    audio_bytes = await get_and_check_file(audio_file, "audio/mpeg")
-    audio_hash = calculate_sha1(audio_bytes)
-    s3_uploads.append(
+        },
         {
             "path": f"{session.sonolus_id}/{chart_id}/{audio_hash}",
             "hash": audio_hash,
             "bytes": audio_bytes,
             "content-type": "audio/mpeg",
-        }
-    )
+        },
+    ]
 
-    if preview_file:
-        preview_bytes = await get_and_check_file(preview_file, "audio/mpeg")
-        preview_hash = calculate_sha1(preview_bytes)
+    if preview_file and preview_bytes:
         s3_uploads.append(
             {
                 "path": f"{session.sonolus_id}/{chart_id}/{preview_hash}",
@@ -236,9 +273,7 @@ async def main(
             }
         )
 
-    if background_image:
-        background_bytes = await get_and_check_file(background_image, "image/png")
-        background_hash = calculate_sha1(background_bytes)
+    if background_image and background_bytes:
         s3_uploads.append(
             {
                 "path": f"{session.sonolus_id}/{chart_id}/{background_hash}",
@@ -247,6 +282,7 @@ async def main(
                 "content-type": "image/png",
             }
         )
+
     async with app.s3_session_getter() as s3:
         bucket = await s3.Bucket(app.s3_bucket)
         tasks = []
@@ -265,6 +301,7 @@ async def main(
             )
             tasks.append(task)
         await asyncio.gather(*tasks)
+
     query = charts.create_chart(
         chart=Chart(
             id=chart_id,
@@ -280,8 +317,8 @@ async def main(
             background_v3_file_hash=v3_hash,
             tags=data.tags or [],
             description=data.description,
-            preview_file_hash=preview_hash if preview_file else None,
-            background_file_hash=background_hash if background_image else None,
+            preview_file_hash=preview_hash,
+            background_file_hash=background_hash,
         )
     )
     query2 = accounts.update_cooldown(

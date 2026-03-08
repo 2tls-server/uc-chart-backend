@@ -36,7 +36,7 @@ class ChartFastAPI(FastAPI):
 
     async def init(self) -> None:
         """Initialize all resources after worker process starts."""
-        self.executor = ThreadPoolExecutor(max_workers=16)
+        self.executor = ThreadPoolExecutor(max_workers=32)
 
         self.s3_session = aioboto3.Session(
             aws_access_key_id=self.config["s3"]["access-key-id"],

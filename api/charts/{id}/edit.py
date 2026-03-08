@@ -80,234 +80,315 @@ async def main(
     s3_uploads = []
     old_deletes = []
 
-    if chart_file:
+    file_read_tasks = []
+    file_types = []
+
+    if chart_file and data.includes_chart:
         if chart_file.size > MAX_FILE_SIZES["chart"]:
             raise HTTPException(
                 status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="Uploaded files exceed file size limit.",
             )
-        if data.includes_chart:
-            result = sonolus_converters.detect((await chart_file.read()))
-            await chart_file.seek(0)
-            if not result:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid file format.",
-                )
-            chart_bytes = await chart_file.read()
+        file_read_tasks.append(chart_file.read())
+        file_types.append("chart")
 
-            def convert() -> bytes:
-                if result[0] == "sus":
-                    converted = io.BytesIO()
-                    score = sonolus_converters.sus.load(
-                        io.TextIOWrapper(io.BytesIO(chart_bytes), encoding="utf-8")
-                    )
-                    sonolus_converters.next_sekai.export(converted, score)
-                elif result[0] == "usc":
-                    converted = io.BytesIO()
-                    score = sonolus_converters.usc.load(
-                        io.TextIOWrapper(io.BytesIO(chart_bytes), encoding="utf-8")
-                    )
-                    sonolus_converters.next_sekai.export(converted, score)
-                elif result[0] == "lvd":
-                    if not result[1].endswith("pysekai"):
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Incorrect LevelData: {result[1]} (expected: pysekai)",
-                        )
-                    if not result[1].startswith("compress_"):
-                        compressed_data = io.BytesIO()
-                        with gzip.GzipFile(
-                            fileobj=compressed_data,
-                            mode="wb",
-                            filename="LevelData",
-                            mtime=0,
-                        ) as f:
-                            f.write(chart_bytes)
-                        compressed_data.seek(0)
-                        return compressed_data.getvalue()
-                    return chart_bytes
-                return converted.read()
-
-            try:
-                chart_bytes = await app.run_blocking(convert)
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-                )
-            chart_hash = calculate_sha1(chart_bytes)
-            if not chart_hash == old_chart_data.chart_file_hash:
-                s3_uploads.append(
-                    {
-                        "path": f"{session.sonolus_id}/{id}/{chart_hash}",
-                        "hash": chart_hash,
-                        "bytes": chart_bytes,
-                        "content-type": "application/gzip",
-                    }
-                )
-                old_deletes.append("chart_file_hash")
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Includes unexpected file.",
-            )
-
-        chart_updated = True
-
-    elif data.includes_chart:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
-        )
-    if jacket_image:
+    if jacket_image and data.includes_jacket:
         if jacket_image.size > MAX_FILE_SIZES["jacket"]:
             raise HTTPException(
                 status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="Uploaded files exceed file size limit.",
             )
-        if data.includes_jacket:
-            jacket_bytes = await get_and_check_file(jacket_image, "image")
-            jacket_hash = calculate_sha1(jacket_bytes)
-            if not jacket_hash == old_chart_data.jacket_file_hash:
-                old_deletes.append("jacket_file_hash")
-                v1, v3, jacket_bytes = await app.run_blocking(
-                    generate_backgrounds_resize_jacket, jacket_bytes
-                )
-                jacket_hash = calculate_sha1(jacket_bytes)
-                s3_uploads.append(
-                    {
-                        "path": f"{session.sonolus_id}/{id}/{jacket_hash}",
-                        "hash": jacket_hash,
-                        "bytes": jacket_bytes,
-                        "content-type": "image/png",
-                    }
-                )
-                v1_hash = calculate_sha1(v1)
-                s3_uploads.append(
-                    {
-                        "path": f"{session.sonolus_id}/{id}/{v1_hash}",
-                        "hash": v1_hash,
-                        "bytes": v1,
-                        "content-type": "image/png",
-                    }
-                )
-                v3_hash = calculate_sha1(v3)
-                s3_uploads.append(
-                    {
-                        "path": f"{session.sonolus_id}/{id}/{v3_hash}",
-                        "hash": v3_hash,
-                        "bytes": v3,
-                        "content-type": "image/png",
-                    }
-                )
-                old_deletes.append("background_v1_file_hash")
-                old_deletes.append("background_v3_file_hash")
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Includes unexpected file.",
-            )
-    elif data.includes_jacket:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
-        )
-    if audio_file:
+        file_read_tasks.append(get_and_check_file(jacket_image, "image"))
+        file_types.append("jacket")
+
+    if audio_file and data.includes_audio:
         if audio_file.size > MAX_FILE_SIZES["audio"]:
             raise HTTPException(
                 status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="Uploaded files exceed file size limit.",
             )
-        if data.includes_audio:
-            audio_bytes = await get_and_check_file(audio_file, "audio/mpeg")
-            audio_hash = calculate_sha1(audio_bytes)
-            if not audio_hash == old_chart_data.music_file_hash:
-                s3_uploads.append(
-                    {
-                        "path": f"{session.sonolus_id}/{id}/{audio_hash}",
-                        "hash": audio_hash,
-                        "bytes": audio_bytes,
-                        "content-type": "audio/mpeg",
-                    }
-                )
-                old_deletes.append("music_file_hash")
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Includes unexpected file.",
-            )
+        file_read_tasks.append(get_and_check_file(audio_file, "audio/mpeg"))
+        file_types.append("audio")
 
-        chart_updated = True
-    elif data.includes_audio:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
-        )
-    if preview_file:
+    if preview_file and data.includes_preview and not data.delete_preview:
         if preview_file.size > MAX_FILE_SIZES["preview"]:
             raise HTTPException(
                 status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="Uploaded files exceed file size limit.",
             )
-        if data.includes_preview and not data.delete_preview:
-            preview_bytes = await get_and_check_file(preview_file, "audio/mpeg")
-            preview_hash = calculate_sha1(preview_bytes)
-            if not preview_hash == old_chart_data.preview_file_hash:
-                s3_uploads.append(
-                    {
-                        "path": f"{session.sonolus_id}/{id}/{preview_hash}",
-                        "hash": preview_hash,
-                        "bytes": preview_bytes,
-                        "content-type": "audio/mpeg",
-                    }
-                )
-                old_deletes.append("preview_file_hash")
-        elif data.delete_preview:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Can't delete and include.",
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Includes unexpected file.",
-            )
-    elif data.delete_preview and not data.includes_preview:
-        old_deletes.append("preview_file_hash")
-    elif data.includes_preview:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File not found.",
-        )
-    if background_image:
+        file_read_tasks.append(get_and_check_file(preview_file, "audio/mpeg"))
+        file_types.append("preview")
+
+    if background_image and data.includes_background and not data.delete_background:
         if background_image.size > MAX_FILE_SIZES["background"]:
             raise HTTPException(
                 status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="Uploaded files exceed file size limit.",
             )
-        if data.includes_background and not data.delete_background:
-            background_bytes = await get_and_check_file(background_image, "image/png")
-            background_hash = calculate_sha1(background_bytes)
-            if not background_hash == old_chart_data.background_file_hash:
-                s3_uploads.append(
-                    {
-                        "path": f"{session.sonolus_id}/{id}/{background_hash}",
-                        "hash": background_hash,
-                        "bytes": background_bytes,
-                        "content-type": "image/png",
-                    }
+        file_read_tasks.append(get_and_check_file(background_image, "image/png"))
+        file_types.append("background")
+
+    file_results = {}
+    if file_read_tasks:
+        results = await asyncio.gather(*file_read_tasks)
+        for file_type, result in zip(file_types, results):
+            file_results[file_type] = result
+
+    chart_hash = None
+    jacket_hash = None
+    v1_hash = None
+    v3_hash = None
+    audio_hash = None
+    preview_hash = None
+    background_hash = None
+
+    processing_tasks = []
+    processing_types = []
+
+    if "chart" in file_results:
+        chart_bytes_raw = file_results["chart"]
+        result = sonolus_converters.detect(chart_bytes_raw)
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file format.",
+            )
+
+        def convert_chart() -> bytes:
+            if result[0] == "sus":
+                converted = io.BytesIO()
+                score = sonolus_converters.sus.load(
+                    io.TextIOWrapper(io.BytesIO(chart_bytes_raw), encoding="utf-8")
                 )
-                old_deletes.append("background_file_hash")
-        elif data.delete_background:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Can't delete and include.",
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Includes unexpected file.",
-            )
-    elif data.delete_background and not data.includes_background:
+                sonolus_converters.next_sekai.export(converted, score)
+            elif result[0] == "usc":
+                converted = io.BytesIO()
+                score = sonolus_converters.usc.load(
+                    io.TextIOWrapper(io.BytesIO(chart_bytes_raw), encoding="utf-8")
+                )
+                sonolus_converters.next_sekai.export(converted, score)
+            elif result[0] == "lvd":
+                if not result[1].endswith("pysekai"):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Incorrect LevelData: {result[1]} (expected: pysekai)",
+                    )
+                if not result[1].startswith("compress_"):
+                    compressed_data = io.BytesIO()
+                    with gzip.GzipFile(
+                        fileobj=compressed_data,
+                        mode="wb",
+                        filename="LevelData",
+                        mtime=0,
+                    ) as f:
+                        f.write(chart_bytes_raw)
+                    compressed_data.seek(0)
+                    return compressed_data.getvalue()
+                return chart_bytes_raw
+            return converted.read()
+
+        processing_tasks.append(app.run_blocking(convert_chart))
+        processing_types.append("chart")
+        chart_updated = True
+
+    if "jacket" in file_results:
+        jacket_bytes_original = file_results["jacket"]
+        processing_tasks.append(
+            app.run_blocking(generate_backgrounds_resize_jacket, jacket_bytes_original)
+        )
+        processing_types.append("jacket")
+
+    if processing_tasks:
+        try:
+            processing_results = await asyncio.gather(*processing_tasks)
+            result_idx = 0
+            for proc_type in processing_types:
+                if proc_type == "chart":
+                    chart_bytes = processing_results[result_idx]
+                    result_idx += 1
+                elif proc_type == "jacket":
+                    v1, v3, jacket_bytes = processing_results[result_idx]
+                    result_idx += 1
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    hash_tasks = []
+    hash_types = []
+
+    if "chart" in file_results:
+        hash_tasks.append(app.run_blocking(calculate_sha1, chart_bytes))
+        hash_types.append("chart")
+
+    if "jacket" in file_results:
+        hash_tasks.append(app.run_blocking(calculate_sha1, jacket_bytes))
+        hash_types.append("jacket")
+        hash_tasks.append(app.run_blocking(calculate_sha1, v1))
+        hash_types.append("v1")
+        hash_tasks.append(app.run_blocking(calculate_sha1, v3))
+        hash_types.append("v3")
+
+    if "audio" in file_results:
+        hash_tasks.append(app.run_blocking(calculate_sha1, file_results["audio"]))
+        hash_types.append("audio")
+
+    if "preview" in file_results:
+        hash_tasks.append(app.run_blocking(calculate_sha1, file_results["preview"]))
+        hash_types.append("preview")
+
+    if "background" in file_results:
+        hash_tasks.append(app.run_blocking(calculate_sha1, file_results["background"]))
+        hash_types.append("background")
+
+    if hash_tasks:
+        hash_results = await asyncio.gather(*hash_tasks)
+        for hash_type, hash_value in zip(hash_types, hash_results):
+            if hash_type == "chart":
+                chart_hash = hash_value
+            elif hash_type == "jacket":
+                jacket_hash = hash_value
+            elif hash_type == "v1":
+                v1_hash = hash_value
+            elif hash_type == "v3":
+                v3_hash = hash_value
+            elif hash_type == "audio":
+                audio_hash = hash_value
+            elif hash_type == "preview":
+                preview_hash = hash_value
+            elif hash_type == "background":
+                background_hash = hash_value
+
+    if chart_hash and chart_hash != old_chart_data.chart_file_hash:
+        s3_uploads.append(
+            {
+                "path": f"{session.sonolus_id}/{id}/{chart_hash}",
+                "hash": chart_hash,
+                "bytes": chart_bytes,
+                "content-type": "application/gzip",
+            }
+        )
+        old_deletes.append("chart_file_hash")
+
+    if jacket_hash and jacket_hash != old_chart_data.jacket_file_hash:
+        old_deletes.append("jacket_file_hash")
+        s3_uploads.append(
+            {
+                "path": f"{session.sonolus_id}/{id}/{jacket_hash}",
+                "hash": jacket_hash,
+                "bytes": jacket_bytes,
+                "content-type": "image/png",
+            }
+        )
+        s3_uploads.append(
+            {
+                "path": f"{session.sonolus_id}/{id}/{v1_hash}",
+                "hash": v1_hash,
+                "bytes": v1,
+                "content-type": "image/png",
+            }
+        )
+        s3_uploads.append(
+            {
+                "path": f"{session.sonolus_id}/{id}/{v3_hash}",
+                "hash": v3_hash,
+                "bytes": v3,
+                "content-type": "image/png",
+            }
+        )
+        old_deletes.append("background_v1_file_hash")
+        old_deletes.append("background_v3_file_hash")
+
+    if audio_hash and audio_hash != old_chart_data.music_file_hash:
+        s3_uploads.append(
+            {
+                "path": f"{session.sonolus_id}/{id}/{audio_hash}",
+                "hash": audio_hash,
+                "bytes": file_results["audio"],
+                "content-type": "audio/mpeg",
+            }
+        )
+        old_deletes.append("music_file_hash")
+        chart_updated = True
+
+    if preview_hash and preview_hash != old_chart_data.preview_file_hash:
+        s3_uploads.append(
+            {
+                "path": f"{session.sonolus_id}/{id}/{preview_hash}",
+                "hash": preview_hash,
+                "bytes": file_results["preview"],
+                "content-type": "audio/mpeg",
+            }
+        )
+        old_deletes.append("preview_file_hash")
+
+    if background_hash and background_hash != old_chart_data.background_file_hash:
+        s3_uploads.append(
+            {
+                "path": f"{session.sonolus_id}/{id}/{background_hash}",
+                "hash": background_hash,
+                "bytes": file_results["background"],
+                "content-type": "image/png",
+            }
+        )
         old_deletes.append("background_file_hash")
-    elif data.includes_background:
+
+    if data.delete_preview and not data.includes_preview:
+        old_deletes.append("preview_file_hash")
+    if data.delete_background and not data.includes_background:
+        old_deletes.append("background_file_hash")
+
+    if chart_file and not data.includes_chart:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if data.includes_chart and not chart_file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
+        )
+    if jacket_image and not data.includes_jacket:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if data.includes_jacket and not jacket_image:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
+        )
+    if audio_file and not data.includes_audio:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if data.includes_audio and not audio_file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
+        )
+    if preview_file and not data.includes_preview:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if preview_file and data.delete_preview:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can't delete and include.",
+        )
+    if data.includes_preview and not preview_file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File not found.",
+        )
+    if background_image and not data.includes_background:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if background_image and data.delete_background:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can't delete and include.",
+        )
+    if data.includes_background and not background_image:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File not found.",
@@ -335,6 +416,7 @@ async def main(
         if hash_key in old_chart_data.model_fields
     )
     deleted_hashes = deleted_candidate_hashes - kept_hashes
+
     if deleted_hashes or s3_uploads:
         async with app.s3_session_getter() as s3:
             bucket = await s3.Bucket(app.s3_bucket)
@@ -369,6 +451,7 @@ async def main(
                     tasks += [obj.delete() for obj in objects]
 
             await asyncio.gather(*tasks)
+
     query = charts.update_metadata(
         chart_id=id,
         chart_author=data.author,
@@ -407,4 +490,5 @@ async def main(
 
         if chart_updated:
             await conn.execute(leaderboards.delete_leaderboards(old_chart_data.id))
+
     return {"result": "success"}
