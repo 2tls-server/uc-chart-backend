@@ -128,6 +128,64 @@ async def main(
         file_read_tasks.append(get_and_check_file(background_image, "image/png"))
         file_types.append("background")
 
+    if chart_file and not data.includes_chart:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if data.includes_chart and not chart_file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
+        )
+    if jacket_image and not data.includes_jacket:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if data.includes_jacket and not jacket_image:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
+        )
+    if audio_file and not data.includes_audio:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if data.includes_audio and not audio_file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
+        )
+    if preview_file and not data.includes_preview:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if preview_file and data.delete_preview:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can't delete and include.",
+        )
+    if data.includes_preview and not preview_file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File not found.",
+        )
+    if background_image and not data.includes_background:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Includes unexpected file.",
+        )
+    if background_image and data.delete_background:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can't delete and include.",
+        )
+    if data.includes_background and not background_image:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File not found.",
+        )
+
     file_results = {}
     if file_read_tasks:
         results = await asyncio.gather(*file_read_tasks)
@@ -335,64 +393,6 @@ async def main(
         old_deletes.append("preview_file_hash")
     if data.delete_background and not data.includes_background:
         old_deletes.append("background_file_hash")
-
-    if chart_file and not data.includes_chart:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Includes unexpected file.",
-        )
-    if data.includes_chart and not chart_file:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
-        )
-    if jacket_image and not data.includes_jacket:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Includes unexpected file.",
-        )
-    if data.includes_jacket and not jacket_image:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
-        )
-    if audio_file and not data.includes_audio:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Includes unexpected file.",
-        )
-    if data.includes_audio and not audio_file:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="File not found."
-        )
-    if preview_file and not data.includes_preview:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Includes unexpected file.",
-        )
-    if preview_file and data.delete_preview:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Can't delete and include.",
-        )
-    if data.includes_preview and not preview_file:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File not found.",
-        )
-    if background_image and not data.includes_background:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Includes unexpected file.",
-        )
-    if background_image and data.delete_background:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Can't delete and include.",
-        )
-    if data.includes_background and not background_image:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File not found.",
-        )
 
     all_hash_keys = {
         "background_file_hash",
