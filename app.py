@@ -162,16 +162,14 @@ async def startup_event():
 app.add_event_handler("startup", startup_event)
 
 
-async def start_fastapi():
-    config_server = uvicorn.Config(
+def start_fastapi():
+    uvicorn.run(
         "app:app",
         host="0.0.0.0",
         port=config["server"]["port"],
-        workers=16,
+        workers=8,
         access_log=debug,
     )
-    server = uvicorn.Server(config_server)
-    await server.serve()
 
 
 if __name__ == "__main__":

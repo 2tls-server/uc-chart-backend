@@ -72,7 +72,10 @@ async def upload_replay(
     tasks = []
     async with app.db_acquire() as conn:
         chart = await conn.fetchrow(charts.get_chart_by_id(id))
-
+        if not chart:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found."
+            )
         if chart.status == "PRIVATE" and chart.author != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="This chart is private."
