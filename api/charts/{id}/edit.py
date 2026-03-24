@@ -9,6 +9,7 @@ import sonolus_converters
 from helpers.models import ChartEditData
 from helpers.hashing import calculate_sha1
 from helpers.backgrounds import generate_backgrounds_resize_jacket
+from helpers.audio import ensure_cbr_mp3
 from helpers.constants import MAX_FILE_SIZES, MAX_TEXT_SIZES, MAX_RATINGS
 
 from typing import Optional
@@ -191,6 +192,15 @@ async def main(
         results = await asyncio.gather(*file_read_tasks)
         for file_type, result in zip(file_types, results):
             file_results[file_type] = result
+
+    if "audio" in file_results:
+        file_results["audio"] = await app.run_blocking(
+            ensure_cbr_mp3, file_results["audio"]
+        )
+    # if "preview" in file_results:
+    #     file_results["preview"] = await app.run_blocking(
+    #         ensure_cbr_mp3, file_results["preview"]
+    #     )
 
     chart_hash = None
     jacket_hash = None

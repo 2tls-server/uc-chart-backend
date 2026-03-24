@@ -11,6 +11,7 @@ from helpers.models import ChartUploadData, Chart
 from helpers.hashing import calculate_sha1
 from helpers.file_checks import get_and_check_file
 from helpers.backgrounds import generate_backgrounds_resize_jacket
+from helpers.audio import ensure_cbr_mp3
 from helpers.session import get_session, Session
 from helpers.constants import MAX_FILE_SIZES, MAX_TEXT_SIZES, MAX_RATINGS
 
@@ -143,13 +144,14 @@ async def main(
 
     jacket_bytes_original = file_results[0]
     chart_bytes_raw = file_results[1]
-    audio_bytes = file_results[2]
+    audio_bytes = await app.run_blocking(ensure_cbr_mp3, file_results[2])
 
     result_idx = 3
     preview_bytes = None
     background_bytes = None
 
     if preview_file:
+        # preview_bytes = await app.run_blocking(ensure_cbr_mp3, file_results[result_idx])
         preview_bytes = file_results[result_idx]
         result_idx += 1
     if background_image:
