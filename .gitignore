@@ -1,5 +1,6 @@
 # Private files
 config.yml
+vbr_changes.json
 
 # vscode
 .vscode/

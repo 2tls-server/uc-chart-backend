@@ -24,6 +24,8 @@ def is_vbr_mp3(file_path: str) -> bool:
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=20,
         )
         if result.returncode != 0:
@@ -83,6 +85,8 @@ def ensure_cbr_mp3(audio_bytes: bytes) -> bytes:
             ],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
         )
 
