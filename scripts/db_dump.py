@@ -42,6 +42,7 @@ cmd = [
     psql["database"],
     "--no-owner",
     "--no-acl",
+    "--exclude-schema=cron",
     "-f",
     output_file,
 ]
