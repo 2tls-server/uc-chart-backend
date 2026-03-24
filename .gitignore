@@ -8,6 +8,9 @@ vbr_changes.json
 # script asset files, make em urselves
 scripts/assets/
 
+# database dumps
+scripts/dumps/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
