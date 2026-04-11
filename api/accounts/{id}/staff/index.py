@@ -2,7 +2,7 @@ from core import ChartFastAPI
 
 from fastapi import APIRouter, Request, HTTPException, status
 
-from database import accounts
+from database import accounts, staff_actions
 
 router = APIRouter()
 
@@ -18,6 +18,16 @@ async def mod_user(request: Request, id: str):
 
     async with app.db_acquire() as conn:
         await conn.execute(query)
+        await conn.execute(
+            staff_actions.log_action(
+                actor_id="SYSTEM",
+                action="mod",
+                target_type="account",
+                target_id=id,
+                previous_value="false",
+                new_value="true",
+            )
+        )
 
     return {"result": "success"}
 
@@ -33,6 +43,16 @@ async def unmod_user(request: Request, id: str):
 
     async with app.db_acquire() as conn:
         await conn.execute(query)
+        await conn.execute(
+            staff_actions.log_action(
+                actor_id="SYSTEM",
+                action="unmod",
+                target_type="account",
+                target_id=id,
+                previous_value="true",
+                new_value="false",
+            )
+        )
 
     return {"result": "success"}
 
@@ -48,6 +68,16 @@ async def admin_user(request: Request, id: str):
 
     async with app.db_acquire() as conn:
         await conn.execute(query)
+        await conn.execute(
+            staff_actions.log_action(
+                actor_id="SYSTEM",
+                action="admin",
+                target_type="account",
+                target_id=id,
+                previous_value="false",
+                new_value="true",
+            )
+        )
 
     return {"result": "success"}
 
@@ -63,5 +93,15 @@ async def unadmin_user(request: Request, id: str):
 
     async with app.db_acquire() as conn:
         await conn.execute(query)
+        await conn.execute(
+            staff_actions.log_action(
+                actor_id="SYSTEM",
+                action="unadmin",
+                target_type="account",
+                target_id=id,
+                previous_value="true",
+                new_value="false",
+            )
+        )
 
     return {"result": "success"}

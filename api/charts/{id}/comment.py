@@ -5,7 +5,7 @@ from typing import Optional
 
 from core import ChartFastAPI
 
-from database import accounts, comments
+from database import accounts, comments, staff_actions
 from helpers.session import get_session, Session
 
 from helpers.models import CommentRequest
@@ -78,6 +78,16 @@ async def main(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Chart or comment not found.",
+            )
+        if user.mod and user.sonolus_id != result.commenter:
+            await conn.execute(
+                staff_actions.log_action(
+                    actor_id=user.sonolus_id,
+                    action="comment_delete",
+                    target_type="comment",
+                    target_id=str(comment_id),
+                    previous_value=result.content,
+                )
             )
     d = result.model_dump()
     if user.mod:

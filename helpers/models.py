@@ -418,5 +418,18 @@ leaderboard_type: TypeAlias = Literal[
 ]
 
 
+class StaffAction(BaseModel):
+    id: int
+    actor_id: str
+    action: str
+    target_type: str
+    target_id: str
+    previous_value: Optional[str] = None
+    new_value: Optional[str] = None
+    created_at: datetime
+    sonolus_username: Optional[str] = None
+    sonolus_handle: Optional[int] = None
+
+
 class UpdateDescriptionRequest(BaseModel):
     description: Optional[str]

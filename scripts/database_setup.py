@@ -239,6 +239,17 @@ CREATE INDEX IF NOT EXISTS idx_charts_title_trgm ON charts USING GIN (LOWER(titl
 CREATE INDEX IF NOT EXISTS idx_charts_description_trgm ON charts USING GIN (LOWER(description) gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_charts_artists_trgm ON charts USING GIN (LOWER(artists) gin_trgm_ops);
 """,
+        """CREATE TABLE IF NOT EXISTS staff_actions (
+    id SERIAL PRIMARY KEY,
+    actor_id TEXT REFERENCES accounts(sonolus_id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    target_type TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    previous_value TEXT,
+    new_value TEXT,
+    created_at timestamp with time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+);
+CREATE INDEX IF NOT EXISTS idx_staff_actions_created_at ON staff_actions(created_at DESC);""",
         """CREATE TABLE IF NOT EXISTS external_login_ids (
     id_key TEXT NOT NULL PRIMARY KEY,
     session_key TEXT,

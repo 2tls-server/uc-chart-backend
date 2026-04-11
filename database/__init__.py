@@ -3,6 +3,7 @@ from . import charts
 from . import comments
 from . import external
 from . import leaderboards
+from . import staff_actions
 
 from .query import SelectQuery, ExecutableQuery
 

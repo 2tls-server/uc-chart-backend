@@ -4,7 +4,7 @@ from core import ChartFastAPI
 from fastapi import APIRouter, Request, HTTPException, status, UploadFile, Form
 from helpers.session import get_session, Session
 
-from database import charts
+from database import charts, staff_actions
 
 from helpers.webhook_handler import WebhookMessage, WebhookEmbed
 from helpers.sanitizers import sanitize_md
@@ -39,6 +39,16 @@ async def main(
     async with app.db_acquire() as conn:
         result = await conn.fetchrow(query)
         if result:
+            await conn.execute(
+                staff_actions.log_action(
+                    actor_id=user.sonolus_id,
+                    action="staff_pick",
+                    target_type="chart",
+                    target_id=id,
+                    previous_value=str(not data.value),
+                    new_value=str(data.value),
+                )
+            )
             if data.value == True:
                 if (app.config["discord"]["staff-pick-webhook"]).strip() != "":
                     wmsg = WebhookMessage(
