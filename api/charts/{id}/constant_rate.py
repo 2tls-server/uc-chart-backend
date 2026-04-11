@@ -2,7 +2,7 @@ import io, asyncio, gzip
 
 from fastapi import APIRouter, Request, HTTPException, status
 
-from database import charts
+from database import charts, staff_actions
 
 from helpers.models import ChartConstantData
 
@@ -53,5 +53,18 @@ async def main(
         rating=data.constant,
     )
     async with app.db_acquire() as conn:
+        old_rating = await conn.conn.fetchval(
+            "SELECT rating FROM charts WHERE id = $1", id
+        )
         await conn.execute(query)
+        await conn.execute(
+            staff_actions.log_action(
+                actor_id=user.sonolus_id,
+                action="constant_rerate",
+                target_type="chart",
+                target_id=id,
+                previous_value=str(old_rating),
+                new_value=str(data.constant),
+            )
+        )
     return {"result": "success"}

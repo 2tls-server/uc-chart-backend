@@ -1,4 +1,5 @@
 import os, importlib, traceback
+from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,11 +16,38 @@ from core import ChartFastAPI
 config = get_config()
 debug = config.get("server", {}).get("debug")
 
+
+@asynccontextmanager
+async def lifespan(app: ChartFastAPI):
+    oauth = OAuth()
+    oauth.register(
+        name="discord",
+        client_id=config["oauth"]["discord-client-id"],
+        client_secret=config["oauth"]["discord-client-secret"],
+        access_token_url="https://discord.com/api/oauth2/token",
+        access_token_params=None,
+        authorize_url="https://discord.com/api/oauth2/authorize",
+        authorize_params=None,
+        api_base_url="https://discord.com/api/v10/",
+        client_kwargs={"scope": "identify guilds"},
+    )
+    app.oauth = oauth
+    await app.init()
+    folder = "api"
+    if len(os.listdir(folder)) == 0:
+        print("[WARN] No routes loaded.")
+    else:
+        load_routes(folder, cleanup=debug)
+        print("Routes loaded!")
+    yield
+
+
 if debug:
-    app = ChartFastAPI(config=config)
+    app = ChartFastAPI(config=config, lifespan=lifespan)
 else:
     app = ChartFastAPI(
         config=config,
+        lifespan=lifespan,
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
@@ -134,32 +162,6 @@ def load_routes(folder, cleanup: bool = True):
                 pycache_path = os.path.join(root, "__pycache__")
                 shutil.rmtree(pycache_path, ignore_errors=True)
                 print(f"[API] Removed __pycache__ at {pycache_path}")
-
-
-async def startup_event():
-    oauth = OAuth()
-    oauth.register(
-        name="discord",
-        client_id=config["oauth"]["discord-client-id"],
-        client_secret=config["oauth"]["discord-client-secret"],
-        access_token_url="https://discord.com/api/oauth2/token",
-        access_token_params=None,
-        authorize_url="https://discord.com/api/oauth2/authorize",
-        authorize_params=None,
-        api_base_url="https://discord.com/api/v10/",
-        client_kwargs={"scope": "identify guilds"},
-    )
-    app.oauth = oauth
-    await app.init()
-    folder = "api"
-    if len(os.listdir(folder)) == 0:
-        print("[WARN] No routes loaded.")
-    else:
-        load_routes(folder, cleanup=debug)
-        print("Routes loaded!")
-
-
-app.add_event_handler("startup", startup_event)
 
 
 def start_fastapi():

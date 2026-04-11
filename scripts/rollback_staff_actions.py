@@ -17,29 +17,9 @@ ROLLBACK_HANDLERS: dict[str, str] = {
         UPDATE charts SET staff_pick = $1::bool, updated_at = CURRENT_TIMESTAMP
         WHERE id = $2;
     """,
-    "ban": """
-        UPDATE accounts SET banned = $1::bool, updated_at = CURRENT_TIMESTAMP
-        WHERE sonolus_id = $2;
-    """,
-    "unban": """
-        UPDATE accounts SET banned = $1::bool, updated_at = CURRENT_TIMESTAMP
-        WHERE sonolus_id = $2;
-    """,
-    "mod": """
-        UPDATE accounts SET mod = $1::bool, updated_at = CURRENT_TIMESTAMP
-        WHERE sonolus_id = $2;
-    """,
-    "unmod": """
-        UPDATE accounts SET mod = $1::bool, updated_at = CURRENT_TIMESTAMP
-        WHERE sonolus_id = $2;
-    """,
-    "admin": """
-        UPDATE accounts SET admin = $1::bool, updated_at = CURRENT_TIMESTAMP
-        WHERE sonolus_id = $2;
-    """,
-    "unadmin": """
-        UPDATE accounts SET admin = $1::bool, updated_at = CURRENT_TIMESTAMP
-        WHERE sonolus_id = $2;
+    "constant_rerate": """
+        UPDATE charts SET rating = $1::decimal, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2;
     """,
 }
 

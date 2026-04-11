@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, HTTPException, status
 
 from helpers.delete import delete_from_s3
 
-from database import accounts, staff_actions
+from database import accounts
 
 router = APIRouter()
 
@@ -20,16 +20,6 @@ async def ban_user(request: Request, id: str, delete: bool = False):
 
     async with app.db_acquire() as conn:
         await conn.execute(query)
-        await conn.execute(
-            staff_actions.log_action(
-                actor_id="SYSTEM",
-                action="ban",
-                target_type="account",
-                target_id=id,
-                previous_value="false",
-                new_value="true",
-            )
-        )
         if delete:
             await conn.conn.execute("DELETE FROM charts WHERE author = $1", id)
 
@@ -50,15 +40,5 @@ async def unban_user(request: Request, id: str):
 
     async with app.db_acquire() as conn:
         await conn.execute(query)
-        await conn.execute(
-            staff_actions.log_action(
-                actor_id="SYSTEM",
-                action="unban",
-                target_type="account",
-                target_id=id,
-                previous_value="true",
-                new_value="false",
-            )
-        )
 
     return {"result": "success"}
