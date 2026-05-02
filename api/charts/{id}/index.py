@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException, status
+from fastapi import APIRouter, Request, HTTPException, Query, status
 from core import ChartFastAPI
 
 from database import charts
@@ -8,12 +8,12 @@ router = APIRouter()
 
 
 @router.get("/")
-async def main(request: Request, id: str, session: Session = get_session()):
-    # exposed to public
-    # no authentication needed
-    # however, if they are authed
-    # use it to check if liked
-
+async def main(
+    request: Request,
+    id: str,
+    is_preview: bool = Query(False),
+    session: Session = get_session(),
+):
     app: ChartFastAPI = request.app
 
     if len(id) != 32 or not id.isalnum():
@@ -28,7 +28,7 @@ async def main(request: Request, id: str, session: Session = get_session()):
 
         if not result:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Chart not found."
+                status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found."
             )
 
         user = None
@@ -46,10 +46,15 @@ async def main(request: Request, id: str, session: Session = get_session()):
                 res["admin"] = True
             return res
 
-        if result.status == "PRIVATE" and result.author != session.sonolus_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Chart not found."
-            )
+        is_owner = result.author == session.sonolus_id
+
+        if result.status == "PRIVATE":
+            if is_preview and is_owner:
+                pass
+            elif not is_owner:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found."
+                )
 
     return {
         "data": result.model_dump(),
