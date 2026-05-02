@@ -623,12 +623,16 @@ def update_status(
             """
                 WITH updated AS (
                     UPDATE charts
-                    SET 
-                        status = $1::chart_status, 
+                    SET
+                        status = $1::chart_status,
                         updated_at = CURRENT_TIMESTAMP,
-                        published_at = CASE 
+                        published_at = CASE
                             WHEN $1::chart_status = 'PUBLIC' AND published_at IS NULL THEN CURRENT_TIMESTAMP
                             ELSE published_at
+                        END,
+                        scheduled_publish = CASE
+                            WHEN $1::chart_status = 'PUBLIC' THEN NULL
+                            ELSE scheduled_publish
                         END
                     WHERE id = $2 AND author = $3
                     RETURNING id, published_at, status
@@ -653,12 +657,16 @@ def update_status(
             """
                 WITH updated AS (
                     UPDATE charts
-                    SET 
-                        status = $1::chart_status, 
+                    SET
+                        status = $1::chart_status,
                         updated_at = CURRENT_TIMESTAMP,
-                        published_at = CASE 
+                        published_at = CASE
                             WHEN $1::chart_status = 'PUBLIC' AND published_at IS NULL THEN CURRENT_TIMESTAMP
                             ELSE published_at
+                        END,
+                        scheduled_publish = CASE
+                            WHEN $1::chart_status = 'PUBLIC' THEN NULL
+                            ELSE scheduled_publish
                         END
                     WHERE id = $2
                     RETURNING id, published_at, status

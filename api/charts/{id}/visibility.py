@@ -31,6 +31,19 @@ async def main(
     app: ChartFastAPI = request.app
     user = await session.user()
 
+    query = charts.get_chart_by_id(id, sonolus_id=user.sonolus_id)
+    async with app.db_acquire() as conn:
+        chart = await conn.fetchrow(query)
+    if not chart:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chart not found."
+        )
+    if chart.status == "PUBLIC":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot schedule a chart that is already public.",
+        )
+
     # Heuristic: treat big numbers as ms
     publish_time = data.publish_time
     publish_time_seconds: Optional[int] = None
