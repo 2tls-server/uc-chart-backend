@@ -34,7 +34,7 @@ async def main(request: Request, id: str, session: Session = get_session()):
             "author": result.author,
             "author_full": result.author_full,
             "author_handle": result.author_handle,
-            # "rating": result.rating,
+            "rating": result.rating,
             "jacket_file_hash": result.jacket_file_hash,
             "background_file_hash": result.background_file_hash,
             "background_v3_file_hash": result.background_v3_file_hash,
