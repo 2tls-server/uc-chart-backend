@@ -2,6 +2,7 @@
 Unlike charts/{id}/leaderboards, returns all public records
 """
 
+import asyncio
 import math
 from typing import Literal
 from fastapi import APIRouter, Query, Request
@@ -26,42 +27,45 @@ async def get_records(
             )
             records = await conn.fetch(leaderboard_query)
 
-        response = {"data": []}
+    if not records:
+        return {"data": [], "pageCount": 0} if not random else {"data": []}
 
-        chart_dict = {
-            chart.id: chart
-            for chart in await conn.fetch(
-                charts.get_chart_by_id_batch(
-                    list(set([record.chart_id for record in records]))
-                )
-            )
-        }
+    chart_ids = list(set([record.chart_id for record in records]))
+    submitter_ids = list(set([record.submitter for record in records]))
 
-        account_dict = {
-            account.sonolus_id: account
-            for account in await conn.fetch(
-                accounts.get_public_account_batch(
-                    list(set([record.submitter for record in records]))
-                )
-            )
-        }
+    async def _fetch_charts():
+        async with app.db_acquire() as c:
+            return await c.fetch(charts.get_chart_by_id_batch(chart_ids))
 
-        for record in records:
-            record_data = {
-                "data": record.model_dump(),
-                "chart": chart_dict[record.chart_id],
-                "submitter": account_dict.get(record.submitter),
-                "asset_base_url": app.s3_asset_base_url,
-            }
+    async def _fetch_accounts():
+        async with app.db_acquire() as c:
+            return await c.fetch(accounts.get_public_account_batch(submitter_ids))
 
-            response["data"].append(record_data)
+    async def _fetch_count():
+        if random or limit == 3:
+            return None
+        async with app.db_acquire() as c:
+            return await c.fetchrow(count_query)
 
-        if not random and limit != 3:
-            response["pageCount"] = math.ceil(
-                (await conn.fetchrow(count_query)).total_count / 10
-            )
+    chart_list, account_list, count_result = await asyncio.gather(
+        _fetch_charts(), _fetch_accounts(), _fetch_count()
+    )
+    chart_dict = {chart.id: chart for chart in chart_list}
+    account_dict = {account.sonolus_id: account for account in account_list}
 
-        return response
+    response = {"data": []}
+    for record in records:
+        response["data"].append({
+            "data": record.model_dump(),
+            "chart": chart_dict[record.chart_id],
+            "submitter": account_dict.get(record.submitter),
+            "asset_base_url": app.s3_asset_base_url,
+        })
+
+    if count_result:
+        response["pageCount"] = math.ceil(count_result.total_count / 10)
+
+    return response
 
 
 @router.get("/random/")

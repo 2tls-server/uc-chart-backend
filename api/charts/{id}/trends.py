@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, Request, HTTPException, status
 from core import ChartFastAPI
 
@@ -47,14 +49,20 @@ async def main(request: Request, id: str, session: Session = get_session()):
     query_likes = charts.fetch_chart_like_trend(id)
     query_comments = comments.fetch_chart_comment_trend(id)
 
-    async with app.db_acquire() as conn:
-        result = await conn.fetch(query_likes)
-        result2 = await conn.fetch(query_comments)
+    async def _fetch_likes():
+        async with app.db_acquire() as conn:
+            return await conn.fetch(query_likes)
 
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"Chart not found."
-            )
+    async def _fetch_comments():
+        async with app.db_acquire() as conn:
+            return await conn.fetch(query_comments)
+
+    result, result2 = await asyncio.gather(_fetch_likes(), _fetch_comments())
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Chart not found."
+        )
 
     likes_totals = [row.total_likes for row in result]
     comments_totals = [row.total_comments for row in result2]

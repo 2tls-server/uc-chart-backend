@@ -238,6 +238,25 @@ CREATE INDEX IF NOT EXISTS idx_charts_tags ON charts USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_charts_title_trgm ON charts USING GIN (LOWER(title) gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_charts_description_trgm ON charts USING GIN (LOWER(description) gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_charts_artists_trgm ON charts USING GIN (LOWER(artists) gin_trgm_ops);
+
+-- Charts: author lookups
+CREATE INDEX IF NOT EXISTS idx_charts_author ON charts(author);
+CREATE INDEX IF NOT EXISTS idx_charts_published_at ON charts(published_at DESC);
+
+-- Comments
+CREATE INDEX IF NOT EXISTS idx_comments_chart_id ON comments(chart_id);
+CREATE INDEX IF NOT EXISTS idx_comments_chart_created ON comments(chart_id, created_at DESC);
+
+-- Leaderboards
+CREATE INDEX IF NOT EXISTS idx_leaderboards_chart_id ON leaderboards(chart_id);
+CREATE INDEX IF NOT EXISTS idx_leaderboards_submitter ON leaderboards(submitter);
+CREATE INDEX IF NOT EXISTS idx_leaderboards_chart_score ON leaderboards(chart_id, arcade_score DESC);
+
+-- Accounts
+CREATE INDEX IF NOT EXISTS idx_accounts_handle ON accounts(sonolus_handle);
+
+-- Notifications
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id, created_at DESC);
 """,
         """CREATE TABLE IF NOT EXISTS staff_actions (
     id SERIAL PRIMARY KEY,

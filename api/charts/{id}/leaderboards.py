@@ -218,22 +218,27 @@ async def get_record(
         if not leaderboard_record:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-        chart = await conn.fetchrow(charts.get_chart_by_id(leaderboard_record.chart_id))
-        submitter = await conn.fetchrow(
-            accounts.get_public_account(leaderboard_record.submitter)
+    async def _fetch_chart():
+        async with app.db_acquire() as c:
+            return await c.fetchrow(charts.get_chart_by_id(leaderboard_record.chart_id))
+
+    async def _fetch_submitter():
+        async with app.db_acquire() as c:
+            return await c.fetchrow(accounts.get_public_account(leaderboard_record.submitter))
+
+    chart, submitter = await asyncio.gather(_fetch_chart(), _fetch_submitter())
+
+    if not chart:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="unknown chart",
         )
 
-        if not chart:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="unknown chart",
-            )
-
-        if chart.status == "PRIVATE" and chart.author != session.sonolus_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have access to this chart",
-            )
+    if chart.status == "PRIVATE" and chart.author != session.sonolus_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this chart",
+        )
 
     data = leaderboard_record.model_dump()
 
