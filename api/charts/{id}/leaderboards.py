@@ -30,12 +30,12 @@ router = APIRouter()
 def speed_multiplier(speed: float | None) -> float:
     """
     Only used for comparing scores
-    Sorting is in SQL
+    Sorting is implemented in SQL
     """
     if speed is None:
         return 1.0
 
-    tier = int(speed * 10) / 10
+    tier = int(speed * 20) / 20
 
     if tier < 1:
         return tier - 0.4
